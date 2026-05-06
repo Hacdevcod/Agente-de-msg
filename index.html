@@ -3,420 +3,564 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agente de Mensagem Automatizado V5.1</title>
-    <meta name="description" content="Sistema automatizado de mensagens WhatsApp">
+    <title>Agente de Mensagem Automatizado V6.0 - WhatsApp Web Integrado</title>
+    <meta name="description" content="Sistema automatizado de mensagens WhatsApp com WhatsApp Web integrado">
     
     <style>
         :root {
-            --bg-primary: #1a1a1a;
-            --bg-secondary: #2a2a2a;
-            --bg-tertiary: #3d3d3d;
-            --text-primary: #e0e0e0;
-            --text-secondary: #999;
+            --bg-primary: #111b21;
+            --bg-secondary: #1f2c33;
+            --bg-tertiary: #2a3942;
+            --bg-whatsapp: #0a1014;
+            --text-primary: #e9edef;
+            --text-secondary: #8696a0;
+            --accent-green: #00a884;
             --accent-red: #d71920;
-            --accent-green: #28a745;
             --accent-purple: #9b4dff;
             --accent-yellow: #ffc107;
-            --border-color: #404040;
+            --border-color: #313d45;
+            --whatsapp-green: #25D366;
+            --whatsapp-dark: #075e54;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body { 
-            font-family: 'Segoe UI', Arial, sans-serif; 
-            background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%); 
-            padding: 20px; 
-            color: #e0e0e0;
-            min-height: 100vh;
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; 
+            background: var(--bg-primary); 
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
         }
 
-        .container { 
-            background: rgba(45,45,45,0.95); 
-            backdrop-filter: blur(10px); 
-            padding: 20px; 
-            max-width: 1400px; 
-            margin: auto; 
-            border-radius: 20px; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5); 
-            border: 1px solid rgba(215,25,32,0.3); 
+        /* LAYOUT PRINCIPAL */
+        .app-container {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            grid-template-rows: 1fr;
+            height: 100vh;
+            gap: 8px;
+            padding: 8px;
+            background: #0a0a0a;
         }
 
-        h2 { 
-            background: linear-gradient(135deg, #d71920, #ff4444); 
-            -webkit-background-clip: text; 
-            -webkit-text-fill-color: transparent; 
-            background-clip: text; 
-            text-align: center; 
-            margin-bottom: 10px; 
-            font-size: 28px; 
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #999;
-            font-size: 12px;
-            margin-bottom: 20px;
-        }
-
-        .main-layout { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 20px; 
-        }
-
-        .panel {
-            background: linear-gradient(135deg, #2a2a2a, #222);
-            border-radius: 15px;
-            border: 1px solid #404040;
-            padding: 20px;
+        /* PAINEL DE CONTROLE */
+        .control-panel {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
         }
 
         .panel-header {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: #d71920;
+            background: var(--bg-tertiary);
+            padding: 15px 20px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
         }
 
-        label {
-            display: block;
-            color: #999;
-            font-size: 12px;
-            margin-bottom: 5px;
-            margin-top: 15px;
+        .panel-header h2 {
+            font-size: 18px;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .panel-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .panel-content::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        /* SEÇÕES */
+        .section {
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--accent-green);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* INPUTS */
         textarea, input[type="text"] {
             width: 100%;
-            padding: 12px;
-            background: #3d3d3d;
-            border: 1px solid #4a4a4a;
-            color: #e0e0e0;
+            padding: 10px 12px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
             border-radius: 8px;
             font-size: 13px;
-            resize: vertical;
             font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
         }
 
         textarea:focus, input:focus {
             outline: none;
-            border-color: #d71920;
+            border-color: var(--accent-green);
         }
 
+        textarea {
+            min-height: 80px;
+        }
+
+        label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* TELEFONES */
         .telefones-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
-            padding: 10px;
-            background: #333;
+            gap: 6px;
+            padding: 8px;
+            background: var(--bg-primary);
             border-radius: 8px;
-            border: 1px solid #4a4a4a;
-            min-height: 50px;
-            max-height: 120px;
+            min-height: 40px;
+            max-height: 100px;
             overflow-y: auto;
         }
 
-        .telefone-option {
-            padding: 8px 15px;
-            background: #404040;
-            border-radius: 6px;
+        .telefone-chip {
+            padding: 6px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
             cursor: pointer;
-            transition: all 0.3s;
-            font-size: 14px;
-            border: 2px solid transparent;
+            font-size: 12px;
+            transition: all 0.2s;
+            white-space: nowrap;
         }
 
-        .telefone-option:hover {
-            background: #d71920;
-            transform: translateX(3px);
-        }
-
-        .telefone-option.selected {
-            background: #28a745;
-            border-color: #1e7e34;
+        .telefone-chip:hover {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
             color: white;
         }
 
-        .checkbox-group {
-            display: flex;
-            gap: 20px;
-            margin: 15px 0;
-            flex-wrap: wrap;
+        .telefone-chip.selected {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+            color: white;
+            font-weight: bold;
         }
 
-        .checkbox-group label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            font-size: 13px;
-            margin: 0;
-            color: #e0e0e0;
+        .telefone-chip.invalid {
+            background: #dc3545;
+            border-color: #dc3545;
+            color: white;
+            text-decoration: line-through;
+            cursor: not-allowed;
         }
 
-        .button-group {
-            display: flex;
-            gap: 10px;
-            margin: 15px 0;
-            flex-wrap: wrap;
-        }
-
-        button {
-            padding: 12px 24px;
+        /* BOTÕES */
+        .btn {
+            padding: 10px 20px;
             border: none;
             border-radius: 8px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 600;
+            font-size: 13px;
             transition: all 0.3s;
-            font-size: 14px;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .btn-whatsapp {
-            background: #25D366;
-            color: white;
-            flex: 2;
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-
-        .btn-warning {
-            background: #ffc107;
-            color: #333;
-        }
-
-        .map-area {
-            background: #1e1e1e;
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 15px;
-        }
-
-        .map-container {
-            width: 100%;
-            height: 250px;
-            border-radius: 10px;
-            overflow: hidden;
-            background: #333;
-            position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 8px;
         }
 
-        .map-placeholder {
-            text-align: center;
-            color: #666;
-            padding: 40px;
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
 
-        .map-placeholder .icon {
-            font-size: 48px;
-            margin-bottom: 15px;
+        .btn:active {
+            transform: scale(0.98);
         }
 
-        .map-placeholder .text {
-            font-size: 14px;
-            line-height: 1.6;
+        .btn-whatsapp {
+            background: var(--whatsapp-green);
+            color: white;
+            flex: 1;
         }
 
-        .address-info {
-            background: #2d2d2d;
-            border-radius: 10px;
-            padding: 12px;
+        .btn-send {
+            background: var(--accent-green);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
             margin-top: 10px;
         }
 
-        .address-info .label {
-            font-size: 11px;
-            color: #999;
-            margin-bottom: 3px;
-        }
-
-        .address-info .value {
-            font-size: 13px;
-            font-weight: bold;
-            color: #d71920;
-            word-break: break-word;
-            margin-bottom: 10px;
-        }
-
-        .address-actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .btn-map {
-            flex: 1;
-            padding: 8px;
-            border: none;
+        /* MENSAGEM PREVIEW */
+        .message-preview {
+            background: var(--bg-primary);
             border-radius: 8px;
+            padding: 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            max-height: 150px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border-left: 3px solid var(--accent-green);
+        }
+
+        /* STATUS */
+        .status-bar {
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .status-bar.show {
+            display: block;
+        }
+
+        .status-bar.success { background: #1b3a2a; color: #28a745; }
+        .status-bar.error { background: #3a1b1b; color: #dc3545; }
+        .status-bar.info { background: #1a2a3a; color: #17a2b8); }
+
+        /* PAINEL WHATSAPP */
+        .whatsapp-panel {
+            background: var(--bg-whatsapp);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .whatsapp-header {
+            background: var(--whatsapp-dark);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .whatsapp-header .logo {
+            width: 36px;
+            height: 36px;
+            background: var(--whatsapp-green);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .whatsapp-header .title {
+            font-size: 15px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .whatsapp-header .status {
+            font-size: 11px;
+            color: #a3c9a7;
+        }
+
+        .whatsapp-frame-container {
+            flex: 1;
+            position: relative;
+            background: #0a1014;
+        }
+
+        #whatsappFrame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* QR CODE OVERLAY */
+        .qr-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 16, 20, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: opacity 0.5s;
+        }
+
+        .qr-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .qr-container {
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .qr-container h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .qr-container .qr-placeholder {
+            width: 200px;
+            height: 200px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 14px;
+            color: #999;
+        }
+
+        .qr-container .qr-placeholder canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .qr-steps {
+            color: #666;
+            font-size: 12px;
+            text-align: left;
+            margin-top: 15px;
+            line-height: 1.8;
+        }
+
+        .qr-steps span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-qr {
+            background: var(--whatsapp-green);
+            color: white;
+            padding: 10px 25px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            margin-top: 15px;
+            transition: all 0.3s;
+        }
+
+        .btn-qr:hover {
+            background: #128C7E;
+            transform: scale(1.05);
+        }
+
+        /* TOGGLE WHATSAPP */
+        .whatsapp-toggle {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 20;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            padding: 8px 16px;
             cursor: pointer;
             font-size: 12px;
-            font-weight: bold;
+            color: var(--text-primary);
+            display: none;
             transition: all 0.3s;
-            min-width: 70px;
         }
 
-        .btn-map.edit { background: #ffc107; color: #333; }
-        .btn-map.location { background: #17a2b8; color: white; }
-        .btn-map.copy { background: #00b894; color: white; }
-
-        .status {
-            margin-top: 15px;
-            padding: 12px;
-            border-radius: 8px;
-            display: none;
-            font-size: 13px;
+        .whatsapp-toggle:hover {
+            background: var(--accent-green);
+            color: white;
         }
 
-        .status.success { display: block; background: #1e3323; color: #28a745; border: 1px solid #28a745; }
-        .status.error { display: block; background: #332323; color: #dc3545; border: 1px solid #dc3545; }
-        .status.info { display: block; background: #1e2f3a; color: #17a2b8; border: 1px solid #17a2b8); }
-        .status.warning { display: block; background: #332e1f; color: #ffc107; border: 1px solid #ffc107); }
-
-        .aviso-duplicado {
-            background: #332e1f;
-            border: 1px solid #ffc107;
-            border-radius: 8px;
-            padding: 10px;
-            margin: 10px 0;
-            color: #ffc107;
-            font-size: 12px;
-            display: none;
-        }
-
-        .aviso-duplicado.show { display: block; }
-
-        .footer {
-            margin-top: 30px;
-            padding: 20px;
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-            border-top: 1px solid #404040;
-        }
-
-        .footer strong {
-            color: #9b4dff;
-        }
-
+        /* RESPONSIVO */
         @media (max-width: 900px) {
-            .main-layout { grid-template-columns: 1fr; }
-            body { padding: 10px; }
-            h2 { font-size: 22px; }
+            .app-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+            
+            .control-panel {
+                max-height: 50vh;
+            }
+        }
+
+        /* ANIMAÇÕES */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .connecting {
+            animation: pulse 1.5s infinite;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>⚡ Agente de Mensagem Automatizado V5.1</h2>
-    <div class="subtitle">Sistema Inteligente de Atendimento WhatsApp | Sem necessidade de API do Google Maps</div>
-    
-    <div class="main-layout">
-        <!-- PAINEL ESQUERDO - FORMULÁRIO -->
-        <div class="panel">
-            <div class="panel-header">📋 Gerador de Mensagens</div>
-            
-            <div id="avisoDuplicado" class="aviso-duplicado">
-                ⚠️ <span id="avisoDuplicadoTexto"></span>
-            </div>
-            
-            <label>📋 Cole aqui o texto com os dados do cliente:</label>
-            <textarea id="fonte" placeholder="Cole o texto completo aqui...&#10;&#10;Exemplo:&#10;Nome: João Silva&#10;Contrato: 12345&#10;Endereço: Rua das Flores, 123&#10;Bairro: Centro&#10;Cidade: São Paulo - SP&#10;Telefone: (11) 91234-5678" oninput="processarTextoCompleto()" rows="5"></textarea>
-            
-            <label>📱 TELEFONES DETECTADOS:</label>
-            <div id="telefones-container" class="telefones-container">
-                <div style="color:#999; text-align:center; width:100%; padding:15px;">Aguardando dados...</div>
-            </div>
-            
-            <label>📱 NÚMERO SELECIONADO:</label>
-            <input type="text" id="telefone" placeholder="Selecione um telefone acima..." readonly>
-            
-            <div class="checkbox-group">
-                <label><input type="checkbox" id="copiarClipboard" checked> 📋 Copiar mensagem</label>
-                <label><input type="checkbox" id="incluirAgenda" checked onchange="gerarMensagem()"> 📅 Incluir oferta de agenda</label>
-                <label><input type="checkbox" id="incluirLocalizacao" checked onchange="gerarMensagem()"> 📍 Incluir localização</label>
-            </div>
-            
-            <div class="button-group">
-                <button class="btn-whatsapp" onclick="dispararWhatsApp()" id="btnDisparo">💬 ENVIAR WHATSAPP</button>
-                <button class="btn-secondary" onclick="limparTudo()">🗑️ LIMPAR</button>
-            </div>
-            
-            <label>📝 MENSAGEM GERADA:</label>
-            <textarea id="resultado" readonly rows="6" placeholder="A mensagem será gerada automaticamente..."></textarea>
-            <div style="font-size:12px; color:#999; text-align:right; margin-top:5px;" id="contador">Caracteres: 0</div>
-            
-            <div id="status" class="status"></div>
+<div class="app-container">
+    <!-- PAINEL DE CONTROLE ESQUERDO -->
+    <div class="control-panel">
+        <div class="panel-header">
+            <h2>⚡ Agente V6.0</h2>
+            <span style="font-size:11px;color:var(--text-secondary);">WhatsApp Web Integrado</span>
         </div>
         
-        <!-- PAINEL DIREITO - MAPA E LOCALIZAÇÃO -->
-        <div class="panel">
-            <div class="panel-header">🗺️ Localização do Cliente</div>
+        <div class="panel-content">
+            <!-- DADOS DO CLIENTE -->
+            <div class="section">
+                <div class="section-title">📋 Dados do Cliente</div>
+                <textarea id="fonte" placeholder="Cole o texto com os dados do cliente...&#10;&#10;Nome: João Silva&#10;Contrato: 12345&#10;Endereço: Rua das Flores, 123&#10;Bairro: Centro&#10;Cidade: São Paulo - SP&#10;Telefone: (11) 91234-5678" oninput="processarTextoCompleto()"></textarea>
+            </div>
             
-            <div class="map-area">
-                <div class="map-container" id="mapContainer">
-                    <div class="map-placeholder" id="mapPlaceholder">
-                        <div class="icon">🗺️</div>
-                        <div class="text">
-                            <strong>Mapa de Localização</strong><br>
-                            O endereço será exibido aqui<br>
-                            quando você colar os dados do cliente.
-                        </div>
-                    </div>
-                    <iframe id="mapFrame" style="width:100%;height:100%;border:0;display:none;" 
-                            allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
-                    </iframe>
+            <!-- TELEFONES -->
+            <div class="section">
+                <div class="section-title">📱 Telefones Detectados</div>
+                <div class="telefones-container" id="telefones-container">
+                    <span style="color:var(--text-secondary);font-size:12px;">Aguardando dados...</span>
                 </div>
-                
-                <div class="address-info">
-                    <div class="label">📍 ENDEREÇO DETECTADO:</div>
-                    <div class="value" id="detectedAddress">Aguardando texto...</div>
-                    
-                    <div class="label">🏙️ CIDADE / ESTADO:</div>
-                    <div class="value" id="cidadeEstado">-</div>
-                    
-                    <div class="address-actions">
-                        <button class="btn-map edit" onclick="editarEndereco()">✏️ EDITAR</button>
-                        <button class="btn-map location" onclick="buscarLocalizacaoAtual()">📍 MINHA LOCAL</button>
-                        <button class="btn-map copy" onclick="copiarEndereco()">📋 COPIAR</button>
-                    </div>
+                <input type="text" id="telefone" placeholder="Selecione um telefone..." readonly style="margin-top:8px;">
+            </div>
+            
+            <!-- CONFIGURAÇÕES -->
+            <div class="section">
+                <div class="section-title">⚙️ Configurações</div>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:0;">
+                    <input type="checkbox" id="copiarClipboard" checked>
+                    📋 Copiar mensagem automaticamente
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <input type="checkbox" id="incluirAgenda" checked onchange="gerarMensagem()">
+                    📅 Incluir oferta de agenda
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <input type="checkbox" id="incluirLocalizacao" checked onchange="gerarMensagem()">
+                    📍 Incluir localização
+                </label>
+            </div>
+            
+            <!-- MENSAGEM GERADA -->
+            <div class="section">
+                <div class="section-title">📝 Mensagem Gerada</div>
+                <div class="message-preview" id="previewMensagem">
+                    A mensagem será gerada automaticamente...
+                </div>
+                <div style="font-size:11px;color:var(--text-secondary);text-align:right;margin-top:5px;" id="contador">
+                    Caracteres: 0
                 </div>
             </div>
             
-            <div style="margin-top:20px; padding:15px; background:#2d2d2d; border-radius:10px;">
-                <div style="font-weight:bold; color:#9b4dff; margin-bottom:10px;">📊 INFORMAÇÕES DO SISTEMA</div>
-                <div style="font-size:13px; color:#e0e0e0;" id="systemInfo">
-                    📋 Contratos ativados: <span id="totalContratos">0</span><br>
-                    ✅ Taxa de confirmação: <span id="taxaConfirmacao">0%</span><br>
-                    🎯 Probabilidade atual: <span id="probabilidade">50%</span>
-                </div>
+            <!-- BOTÕES DE AÇÃO -->
+            <div class="btn-group">
+                <button class="btn btn-send" onclick="enviarViaWhatsAppWeb()" id="btnEnviar">
+                    💬 ENVIAR PELO WHATSAPP WEB
+                </button>
+                <button class="btn btn-whatsapp" onclick="abrirWhatsAppApp()">
+                    📱 ABRIR APP
+                </button>
             </div>
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="limparTudo()">
+                    🗑️ LIMPAR
+                </button>
+            </div>
+            
+            <!-- STATUS -->
+            <div id="statusBar" class="status-bar"></div>
         </div>
     </div>
     
-    <div class="footer">
-        <strong>⚡ Desenvolvido por Israelson Diego Rodrigues Sevalho | Agente V5.1 ⚡</strong><br>
-        Sistema de Mensagens Automatizado | Funciona sem API externa | GitHub Pages Ready
+    <!-- PAINEL WHATSAPP WEB DIREITO -->
+    <div class="whatsapp-panel">
+        <div class="whatsapp-header">
+            <div class="logo">💬</div>
+            <div>
+                <div class="title">WhatsApp Web</div>
+                <div class="status" id="whatsappStatus">Conecte seu WhatsApp</div>
+            </div>
+        </div>
+        
+        <div class="whatsapp-frame-container">
+            <!-- IFRAME DO WHATSAPP WEB -->
+            <iframe id="whatsappFrame" 
+                    src="https://web.whatsapp.com/" 
+                    allow="camera;microphone;geolocation"
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals">
+            </iframe>
+            
+            <!-- OVERLAY COM QR CODE -->
+            <div class="qr-overlay" id="qrOverlay">
+                <div class="qr-container">
+                    <h3>📱 Conecte seu WhatsApp</h3>
+                    <div class="qr-placeholder" id="qrPlaceholder">
+                        <div style="text-align:center;">
+                            <div style="font-size:40px;margin-bottom:10px;">📷</div>
+                            <div>Abra o WhatsApp Web<br>para gerar o QR Code</div>
+                        </div>
+                    </div>
+                    <div class="qr-steps">
+                        <span>1️⃣ Abra o WhatsApp no seu celular</span>
+                        <span>2️⃣ Toque em <strong>Menu</strong> ou <strong>Configurações</strong></span>
+                        <span>3️⃣ Selecione <strong>Aparelhos Conectados</strong></span>
+                        <span>4️⃣ Toque em <strong>Conectar um aparelho</strong></span>
+                        <span>5️⃣ Aponte a câmera para o QR Code</span>
+                    </div>
+                    <button class="btn-qr" onclick="recarregarWhatsApp()">
+                        🔄 Recarregar WhatsApp Web
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -445,10 +589,58 @@ let dadosAtuais = {
     telefonesDisponiveis: []
 };
 
-let currentAddress = "";
-let currentCity = "";
-let currentState = "";
-let ultimoPrintBase64 = null;
+let whatsappConectado = false;
+
+// ============================================
+// WHATSAPP WEB IFRAME
+// ============================================
+const whatsappFrame = document.getElementById('whatsappFrame');
+const qrOverlay = document.getElementById('qrOverlay');
+
+// Monitorar carregamento do iframe
+whatsappFrame.addEventListener('load', function() {
+    console.log('📱 WhatsApp Web carregado');
+    document.getElementById('whatsappStatus').textContent = 'WhatsApp Web carregado';
+    
+    // Verificar se está logado (tenta acessar o conteúdo do iframe)
+    setTimeout(verificarConexaoWhatsApp, 3000);
+});
+
+function verificarConexaoWhatsApp() {
+    try {
+        // Tenta acessar o iframe (pode falhar por CORS)
+        const iframeDoc = whatsappFrame.contentDocument || whatsappFrame.contentWindow?.document;
+        
+        if (iframeDoc) {
+            const qrElement = iframeDoc.querySelector('canvas[aria-label="QR code"]');
+            const chatList = iframeDoc.querySelector('#pane-side');
+            
+            if (chatList && !qrElement) {
+                // WhatsApp está conectado
+                whatsappConectado = true;
+                qrOverlay.classList.add('hidden');
+                document.getElementById('whatsappStatus').textContent = '✅ WhatsApp Conectado';
+                console.log('✅ WhatsApp Web conectado!');
+            }
+        }
+    } catch (e) {
+        // CORS bloqueia o acesso - isso é normal
+        console.log('ℹ️ Não foi possível verificar o status (CORS)');
+    }
+    
+    // Verificar novamente em 5 segundos
+    setTimeout(verificarConexaoWhatsApp, 5000);
+}
+
+function recarregarWhatsApp() {
+    document.getElementById('whatsappStatus').textContent = '🔄 Recarregando...';
+    whatsappFrame.src = 'https://web.whatsapp.com/';
+    qrOverlay.classList.remove('hidden');
+    
+    setTimeout(() => {
+        document.getElementById('whatsappStatus').textContent = 'WhatsApp Web carregado';
+    }, 2000);
+}
 
 // ============================================
 // VALIDAÇÃO DE TELEFONE
@@ -463,10 +655,7 @@ function validarTelefone(numero) {
         return { valido: false, motivo: `DDD ${ddd} inválido` };
     }
     if (limpo.length === 11 && parseInt(limpo[2]) !== 9) {
-        return { valido: false, motivo: '11 dígitos mas nono dígito não é 9' };
-    }
-    if (/^(\d)\1+$/.test(limpo)) {
-        return { valido: false, motivo: 'Número inválido (dígitos repetidos)' };
+        return { valido: false, motivo: 'Nono dígito deve ser 9' };
     }
     return { valido: true };
 }
@@ -480,37 +669,25 @@ function formatarTelefone(numero) {
 }
 
 // ============================================
-// EXTRAÇÃO DE DADOS
+// PROCESSAMENTO DE TEXTO
 // ============================================
-function extrairCidadeEstado(enderecoCompleto) {
-    if (!enderecoCompleto || enderecoCompleto === "NÃO INFORMADO") {
-        return { cidade: '', estado: '' };
-    }
+function extrairCidadeEstado(endereco) {
+    if (!endereco || endereco === "NÃO INFORMADO") return { cidade: '', estado: '' };
     
-    // Padrões comuns de cidade/estado
     const padroes = [
-        /(\w[\w\s]+?)\s*[-–]\s*([A-Za-z]{2})\b/i,
-        /(\w[\w\s]+?)\s*,\s*([A-Za-z]{2})\b/i,
-        /(\w[\w\s]+?)\s*\/\s*([A-Za-z]{2})\b/i,
-        /(\w[\w\s]+?)\s+([A-Z]{2})\b/,
+        /(\w[\w\s]+?)\s*[-–]\s*([A-Z]{2})/i,
+        /(\w[\w\s]+?)\s*,\s*([A-Z]{2})/i,
+        /(\w[\w\s]+?)\s*\/\s*([A-Z]{2})/i,
     ];
     
     for (const regex of padroes) {
-        const match = enderecoCompleto.match(regex);
-        if (match) {
-            return {
-                cidade: match[1].trim(),
-                estado: match[2].toUpperCase().trim()
-            };
-        }
+        const match = endereco.match(regex);
+        if (match) return { cidade: match[1].trim(), estado: match[2].toUpperCase() };
     }
     
     return { cidade: '', estado: '' };
 }
 
-// ============================================
-// PROCESSAMENTO DE TEXTO
-// ============================================
 function processarTextoCompleto() {
     const texto = document.getElementById("fonte").value;
     if (!texto || texto.length < 5) return;
@@ -524,230 +701,66 @@ function processarTextoCompleto() {
         let numero = (match[1] + (match[2] || '') + match[3] + match[4]).replace(/\D/g, '');
         const valid = validarTelefone(numero);
         if (valid.valido) {
-            if (numero.length === 10) {
-                numero = numero.substring(0, 2) + '9' + numero.substring(2);
-            }
-            if (!telefones.includes(numero)) {
-                telefones.push(numero);
-            }
+            if (numero.length === 10) numero = numero.substring(0, 2) + '9' + numero.substring(2);
+            if (!telefones.includes(numero)) telefones.push(numero);
         }
     }
     
     // Extrair campos
     const nome = texto.match(/Nome:\s*([^\n]+)/i)?.[1]?.trim() || "NÃO IDENTIFICADO";
     const contrato = texto.match(/Contrato:\s*([^\n]+)/i)?.[1]?.trim() || "N/A";
-    
-    // Extrair endereço (tudo entre Endereço e Bairro/Cidade/CEP)
     const enderecoMatch = texto.match(/Endere[çc]o:\s*([^]+?)(?=Bairro:|Cep:|Cidade:|Estado:|UF:|Telefone|$)/i);
     const endereco = enderecoMatch ? enderecoMatch[1].replace(/\s+/g, ' ').trim() : "NÃO INFORMADO";
-    
     const bairro = texto.match(/Bairro:\s*([^\n]+)/i)?.[1]?.trim() || "NÃO INFORMADO";
-    const cep = texto.match(/CEP:\s*([^\n]+)/i)?.[1]?.trim() || "N/A";
-    
     const cidadeMatch = texto.match(/Cidade:\s*([^\n]+)/i)?.[1]?.trim() || '';
     const estadoMatch = texto.match(/Estado:\s*([^\n]+)/i)?.[1]?.trim() || '';
-    const ufMatch = texto.match(/UF:\s*([A-Z]{2})/i)?.[1]?.trim() || '';
     
     let cidadeExtraida = cidadeMatch;
-    let estadoExtraido = estadoMatch || ufMatch;
+    let estadoExtraido = estadoMatch;
     
-    // Se não encontrou cidade/estado nos campos, tenta extrair do endereço
     if (!cidadeExtraida) {
-        const extraido = extrairCidadeEstado(endereco);
-        cidadeExtraida = extraido.cidade;
-        estadoExtraido = extraido.estado;
+        const ext = extrairCidadeEstado(endereco);
+        cidadeExtraida = ext.cidade;
+        estadoExtraido = ext.estado;
     }
     
     dadosAtuais = {
         ...dadosAtuais,
-        nome,
-        contrato,
-        endereco,
-        bairro,
-        cep,
+        nome, contrato, endereco, bairro,
         cidade: cidadeExtraida,
         estado: estadoExtraido,
         telefonesDisponiveis: telefones
     };
     
-    // Atualizar endereço
-    if (endereco !== "NÃO INFORMADO") {
-        currentAddress = endereco;
-        document.getElementById("detectedAddress").innerHTML = currentAddress;
-        atualizarMapa(currentAddress, cidadeExtraida, estadoExtraido);
-    }
-    
-    // Atualizar cidade/estado
-    if (cidadeExtraida) {
-        currentCity = cidadeExtraida;
-        currentState = estadoExtraido;
-        document.getElementById('cidadeEstado').innerHTML = 
-            `${cidadeExtraida}${estadoExtraido ? '/' + estadoExtraido : ''}`;
-    } else {
-        document.getElementById('cidadeEstado').innerHTML = 'Não detectado';
-    }
-    
     // Renderizar telefones
-    renderizarTelefones(telefones);
-    
-    // Gerar mensagem
-    gerarMensagem();
-    atualizarEstatisticas();
-}
-
-function renderizarTelefones(telefones) {
     const container = document.getElementById('telefones-container');
     container.innerHTML = '';
     
     if (telefones.length === 0) {
-        container.innerHTML = '<div style="color:#999;text-align:center;width:100%;padding:15px;">Nenhum telefone válido detectado</div>';
-        return;
+        container.innerHTML = '<span style="color:var(--text-secondary);font-size:12px;">Nenhum telefone válido</span>';
+    } else {
+        telefones.forEach((tel, idx) => {
+            const chip = document.createElement('span');
+            chip.className = 'telefone-chip';
+            chip.textContent = `${idx + 1}. ${formatarTelefone(tel)}`;
+            chip.onclick = () => selecionarTelefone(tel);
+            chip.setAttribute('data-telefone', tel);
+            container.appendChild(chip);
+        });
+        selecionarTelefone(telefones[0]);
     }
     
-    telefones.forEach((tel, idx) => {
-        const div = document.createElement('div');
-        div.className = 'telefone-option';
-        div.setAttribute('data-telefone', tel);
-        div.onclick = () => selecionarTelefone(tel);
-        div.textContent = `${idx + 1}. ${formatarTelefone(tel)}`;
-        container.appendChild(div);
-    });
-    
-    // Seleciona o primeiro
-    selecionarTelefone(telefones[0]);
+    gerarMensagem();
 }
 
 function selecionarTelefone(telefone) {
-    document.querySelectorAll('.telefone-option').forEach(o => o.classList.remove('selected'));
-    const sel = Array.from(document.querySelectorAll('.telefone-option'))
-        .find(o => o.getAttribute('data-telefone') === telefone);
-    if (sel) sel.classList.add('selected');
+    document.querySelectorAll('.telefone-chip').forEach(c => c.classList.remove('selected'));
+    const chip = document.querySelector(`.telefone-chip[data-telefone="${telefone}"]`);
+    if (chip) chip.classList.add('selected');
     
     dadosAtuais.numero = telefone;
     document.getElementById('telefone').value = formatarTelefone(telefone);
     gerarMensagem();
-}
-
-// ============================================
-// MAPA (USANDO GOOGLE MAPS EMBED - NÃO PRECISA DE API KEY)
-// ============================================
-function atualizarMapa(endereco, cidade, estado) {
-    const mapFrame = document.getElementById('mapFrame');
-    const mapPlaceholder = document.getElementById('mapPlaceholder');
-    
-    if (!endereco || endereco === "NÃO INFORMADO") return;
-    
-    // Monta query de busca
-    let query = endereco;
-    if (cidade) query += `, ${cidade}`;
-    if (estado) query += `, ${estado}`;
-    query += ', Brasil';
-    
-    // Usa o Google Maps Embed (não precisa de API Key para visualização básica)
-    const encodedQuery = encodeURIComponent(query);
-    const mapUrl = `https://www.google.com/maps?q=${encodedQuery}&output=embed&z=16`;
-    
-    mapFrame.src = mapUrl;
-    mapFrame.style.display = 'block';
-    mapPlaceholder.style.display = 'none';
-}
-
-function editarEndereco() {
-    const novo = prompt("Digite o endereço correto:", currentAddress);
-    if (novo && novo.trim()) {
-        currentAddress = novo.trim();
-        document.getElementById("detectedAddress").innerHTML = currentAddress;
-        
-        const extraido = extrairCidadeEstado(currentAddress);
-        if (extraido.cidade) {
-            currentCity = extraido.cidade;
-            currentState = extraido.estado;
-            dadosAtuais.cidade = extraido.cidade;
-            dadosAtuais.estado = extraido.estado;
-            document.getElementById('cidadeEstado').innerHTML = 
-                `${extraido.cidade}${extraido.estado ? '/' + extraido.estado : ''}`;
-        }
-        
-        atualizarMapa(currentAddress, currentCity, currentState);
-        gerarMensagem();
-        mostrarStatus('✅ Endereço atualizado!', 'success');
-    }
-}
-
-function buscarLocalizacaoAtual() {
-    if (!navigator.geolocation) {
-        mostrarStatus('❌ Geolocalização não suportada', 'error');
-        return;
-    }
-    
-    mostrarStatus('📍 Buscando sua localização...', 'info');
-    
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            const { latitude, longitude } = position.coords;
-            
-            // Usa Nominatim (OpenStreetMap) para geocoding reverso
-            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`)
-                .then(res => res.json())
-                .then(data => {
-                    const address = data.address;
-                    currentAddress = data.display_name;
-                    
-                    let cidade = address.city || address.town || address.municipality || '';
-                    let estado = address.state || '';
-                    
-                    // Converter nome do estado para sigla
-                    const estadoSigla = converterEstadoParaSigla(estado);
-                    
-                    document.getElementById("detectedAddress").innerHTML = currentAddress;
-                    currentCity = cidade;
-                    currentState = estadoSigla || estado;
-                    dadosAtuais.cidade = cidade;
-                    dadosAtuais.estado = estadoSigla || estado;
-                    
-                    document.getElementById('cidadeEstado').innerHTML = 
-                        `${cidade}${estadoSigla ? '/' + estadoSigla : (estado ? '/' + estado : '')}`;
-                    
-                    atualizarMapa(currentAddress, cidade, estadoSigla || estado);
-                    gerarMensagem();
-                    mostrarStatus('✅ Localização encontrada!', 'success');
-                })
-                .catch(() => {
-                    mostrarStatus('❌ Erro ao buscar endereço', 'error');
-                });
-        },
-        (error) => {
-            mostrarStatus('❌ Erro ao obter localização', 'error');
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-    );
-}
-
-function converterEstadoParaSigla(nomeEstado) {
-    const estados = {
-        'acre': 'AC', 'alagoas': 'AL', 'amapá': 'AP', 'amazonas': 'AM',
-        'bahia': 'BA', 'ceará': 'CE', 'distrito federal': 'DF', 'espírito santo': 'ES',
-        'goiás': 'GO', 'maranhão': 'MA', 'mato grosso': 'MT', 'mato grosso do sul': 'MS',
-        'minas gerais': 'MG', 'pará': 'PA', 'paraíba': 'PB', 'paraná': 'PR',
-        'pernambuco': 'PE', 'piauí': 'PI', 'rio de janeiro': 'RJ', 'rio grande do norte': 'RN',
-        'rio grande do sul': 'RS', 'rondônia': 'RO', 'roraima': 'RR', 'santa catarina': 'SC',
-        'são paulo': 'SP', 'sergipe': 'SE', 'tocantins': 'TO'
-    };
-    return estados[nomeEstado.toLowerCase()] || '';
-}
-
-function copiarEndereco() {
-    if (!currentAddress || currentAddress === "NÃO INFORMADO") {
-        mostrarStatus('❌ Nenhum endereço para copiar', 'error');
-        return;
-    }
-    
-    const texto = `📍 ${currentAddress}\n🏙️ ${currentCity}${currentState ? '/' + currentState : ''}`;
-    navigator.clipboard.writeText(texto).then(() => {
-        mostrarStatus('✅ Endereço copiado!', 'success');
-    }).catch(() => {
-        mostrarStatus('❌ Erro ao copiar', 'error');
-    });
 }
 
 // ============================================
@@ -759,136 +772,113 @@ function gerarMensagem() {
                      (hora >= 12 && hora < 18 ? "Boa tarde" : "Boa noite");
     
     let msg = `${saudacao}! Como você está? 😊\n\n`;
-    msg += `Aqui quem fala é a equipe de atendimento. Estamos passando para oferecer um atendimento especial para você.\n\n`;
-    msg += `📋 **Seus dados:**\n`;
+    msg += `Aqui quem fala é a equipe de atendimento.\n\n`;
+    msg += `📋 *Dados:*\n`;
     msg += `• Nome: ${dadosAtuais.nome}\n`;
     msg += `• Contrato: ${dadosAtuais.contrato}\n`;
     msg += `• Endereço: ${dadosAtuais.endereco}\n`;
-    msg += `• Bairro: ${dadosAtuais.bairro}\n`;
     
-    if (dadosAtuais.cidade || currentCity) {
-        msg += `• Cidade/UF: ${dadosAtuais.cidade || currentCity}${dadosAtuais.estado || currentState ? '/' + (dadosAtuais.estado || currentState) : ''}\n`;
+    if (dadosAtuais.cidade) {
+        msg += `• Cidade/UF: ${dadosAtuais.cidade}${dadosAtuais.estado ? '/' + dadosAtuais.estado : ''}\n`;
     }
     
     if (document.getElementById('incluirAgenda')?.checked) {
-        msg += `\n📅 **Atendimento:** Conseguimos um horário hoje ainda para você! 🗓️\n`;
-        msg += `✨ Confirme respondendo esta mensagem.\n`;
+        msg += `\n📅 Conseguimos um horário hoje para você! 🗓️\n`;
     }
     
-    if (document.getElementById('incluirLocalizacao')?.checked && currentAddress !== "NÃO INFORMADO") {
-        const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentAddress + (dadosAtuais.cidade || currentCity ? ', ' + (dadosAtuais.cidade || currentCity) : '') + (dadosAtuais.estado || currentState ? ', ' + (dadosAtuais.estado || currentState) : ''))}`;
-        msg += `\n📍 **Localização do atendimento:**\n${currentAddress}\n`;
-        if (dadosAtuais.cidade || currentCity) {
-            msg += `🏙️ ${dadosAtuais.cidade || currentCity}${dadosAtuais.estado || currentState ? '/' + (dadosAtuais.estado || currentState) : ''}\n`;
-        }
-        msg += `🗺️ Link: ${mapsLink}\n`;
+    if (document.getElementById('incluirLocalizacao')?.checked && dadosAtuais.endereco !== "NÃO INFORMADO") {
+        msg += `\n📍 ${dadosAtuais.endereco}\n`;
     }
     
-    msg += `\n💬 Aguardo sua confirmação! ❤️\n`;
-    msg += `Tenha um excelente ${hora < 12 ? 'dia' : (hora < 18 ? 'tarde' : 'noite')}!`;
+    msg += `\n✨ Confirme respondendo esta mensagem!\n`;
+    msg += `Tenha um excelente ${hora < 12 ? 'dia' : (hora < 18 ? 'tarde' : 'noite')}! ❤️`;
     
-    document.getElementById("resultado").value = msg;
-    document.getElementById("contador").innerText = `Caracteres: ${msg.length}`;
+    document.getElementById('previewMensagem').textContent = msg;
+    document.getElementById('contador').textContent = `Caracteres: ${msg.length}`;
     dadosAtuais.mensagem = msg;
     
     return msg;
 }
 
 // ============================================
-// ENVIO WHATSAPP
+// ENVIO VIA WHATSAPP WEB (IFRAME)
 // ============================================
-function verificarClienteExistente(telefone) {
-    const historico = JSON.parse(localStorage.getItem('historicoMensagens') || '[]');
-    return historico.find(item => item.telefone === telefone);
-}
-
-function dispararWhatsApp() {
+function enviarViaWhatsAppWeb() {
     if (!dadosAtuais.numero) {
-        mostrarStatus('❌ Nenhum telefone selecionado!', 'error');
+        mostrarStatus('❌ Selecione um telefone!', 'error');
         return;
-    }
-    
-    const valid = validarTelefone(dadosAtuais.numero);
-    if (!valid.valido) {
-        mostrarStatus(`❌ ${valid.motivo}`, 'error');
-        return;
-    }
-    
-    // Verificar duplicidade
-    const existente = verificarClienteExistente(dadosAtuais.numero);
-    if (existente) {
-        if (!confirm(`⚠️ Este número já foi contatado em ${existente.dataHora}!\nDeseja enviar novamente?`)) {
-            mostrarStatus('❌ Envio cancelado', 'warning');
-            return;
-        }
     }
     
     if (!dadosAtuais.mensagem) gerarMensagem();
     
-    // Copiar para clipboard
-    if (document.getElementById("copiarClipboard").checked) {
+    const telefone = dadosAtuais.numero.replace(/\D/g, '');
+    let numeroFormatado = telefone;
+    if (numeroFormatado.length === 10) {
+        numeroFormatado = numeroFormatado.substring(0, 2) + '9' + numeroFormatado.substring(2);
+    }
+    
+    const mensagem = dadosAtuais.mensagem;
+    
+    // Método 1: Tentar usar a API do WhatsApp Web via iframe
+    const url = `https://web.whatsapp.com/send?phone=55${numeroFormatado}&text=${encodeURIComponent(mensagem)}`;
+    
+    // Abrir no iframe
+    whatsappFrame.src = url;
+    
+    // Mostrar overlay de instrução
+    qrOverlay.classList.remove('hidden');
+    
+    // Copiar mensagem para clipboard como backup
+    if (document.getElementById('copiarClipboard').checked) {
+        navigator.clipboard.writeText(mensagem).then(() => {
+            console.log('📋 Mensagem copiada para clipboard');
+        });
+    }
+    
+    mostrarStatus('✅ Redirecionando no WhatsApp Web...', 'success');
+    document.getElementById('whatsappStatus').textContent = '🔄 Abrindo conversa...';
+    
+    // Salvar no histórico
+    salvarHistorico();
+}
+
+function abrirWhatsAppApp() {
+    if (!dadosAtuais.numero) {
+        mostrarStatus('❌ Selecione um telefone!', 'error');
+        return;
+    }
+    
+    if (!dadosAtuais.mensagem) gerarMensagem();
+    
+    const telefone = dadosAtuais.numero.replace(/\D/g, '');
+    let numeroFormatado = telefone;
+    if (numeroFormatado.length === 10) {
+        numeroFormatado = numeroFormatado.substring(0, 2) + '9' + numeroFormatado.substring(2);
+    }
+    
+    // Copiar mensagem
+    if (document.getElementById('copiarClipboard').checked) {
         navigator.clipboard.writeText(dadosAtuais.mensagem);
     }
     
-    // Abrir WhatsApp
-    abrirWhatsApp(dadosAtuais.numero, dadosAtuais.mensagem);
-    
-    // Salvar no histórico
-    salvarNoHistorico();
-    mostrarStatus('✅ WhatsApp aberto! Mensagem copiada.', 'success');
-}
-
-function abrirWhatsApp(telefone, mensagem) {
-    const limpo = telefone.replace(/\D/g, '');
-    let formatado = limpo;
-    
-    // Adiciona nono dígito se necessário
-    if (formatado.length === 10) {
-        formatado = formatado.substring(0, 2) + '9' + formatado.substring(2);
-    }
-    
-    const link = `whatsapp://send?phone=55${formatado}&text=${encodeURIComponent(mensagem)}`;
-    
-    // Tenta abrir o WhatsApp
+    // Abrir app
+    const link = `whatsapp://send?phone=55${numeroFormatado}&text=${encodeURIComponent(dadosAtuais.mensagem)}`;
     window.open(link, '_blank');
     
-    // Fallback: copia a mensagem para o clipboard
-    navigator.clipboard.writeText(mensagem).catch(() => {});
+    mostrarStatus('📱 WhatsApp app aberto!', 'success');
+    salvarHistorico();
 }
 
-function salvarNoHistorico() {
+function salvarHistorico() {
     const historico = JSON.parse(localStorage.getItem('historicoMensagens') || '[]');
     historico.push({
         dataHora: new Date().toLocaleString('pt-BR'),
         contrato: dadosAtuais.contrato,
         nome: dadosAtuais.nome,
         telefone: dadosAtuais.numero,
-        cidade: dadosAtuais.cidade || currentCity,
-        estado: dadosAtuais.estado || currentState,
         mensagem: dadosAtuais.mensagem
     });
     localStorage.setItem('historicoMensagens', JSON.stringify(historico));
-    atualizarEstatisticas();
-}
-
-// ============================================
-// ESTATÍSTICAS
-// ============================================
-function atualizarEstatisticas() {
-    const historico = JSON.parse(localStorage.getItem('historicoMensagens') || '[]');
-    document.getElementById('totalContratos').textContent = historico.length;
-    
-    // Probabilidade baseada em dados completos
-    let prob = 50;
-    if (dadosAtuais.nome !== 'NÃO IDENTIFICADO') prob += 10;
-    if (dadosAtuais.endereco !== 'NÃO INFORMADO') prob += 10;
-    if (dadosAtuais.cidade || currentCity) prob += 10;
-    if (dadosAtuais.telefonesDisponiveis.length > 0) prob += 10;
-    prob = Math.min(95, prob);
-    
-    document.getElementById('probabilidade').textContent = `${prob}%`;
-    document.getElementById('taxaConfirmacao').textContent = 
-        historico.length > 0 ? `${Math.round((Math.random() * 30 + 40))}%` : '0%';
 }
 
 // ============================================
@@ -897,16 +887,10 @@ function atualizarEstatisticas() {
 function limparTudo() {
     document.getElementById('fonte').value = '';
     document.getElementById('telefone').value = '';
-    document.getElementById('resultado').value = '';
-    document.getElementById('detectedAddress').innerHTML = 'Aguardando texto...';
-    document.getElementById('cidadeEstado').innerHTML = '-';
+    document.getElementById('previewMensagem').textContent = 'A mensagem será gerada automaticamente...';
+    document.getElementById('contador').textContent = 'Caracteres: 0';
     document.getElementById('telefones-container').innerHTML = 
-        '<div style="color:#999;text-align:center;width:100%;padding:15px;">Aguardando dados...</div>';
-    document.getElementById('contador').innerText = 'Caracteres: 0';
-    
-    // Resetar mapa
-    document.getElementById('mapFrame').style.display = 'none';
-    document.getElementById('mapPlaceholder').style.display = 'block';
+        '<span style="color:var(--text-secondary);font-size:12px;">Aguardando dados...</span>';
     
     dadosAtuais = {
         numero: '', contrato: 'N/A', nome: 'NÃO IDENTIFICADO',
@@ -914,21 +898,16 @@ function limparTudo() {
         cidade: '', estado: '', cep: 'N/A', mensagem: '', telefonesDisponiveis: []
     };
     
-    currentAddress = "";
-    currentCity = "";
-    currentState = "";
-    
-    atualizarEstatisticas();
-    mostrarStatus('✅ Todos os campos foram limpos!', 'success');
+    mostrarStatus('✅ Limpo!', 'success');
 }
 
 function mostrarStatus(mensagem, tipo) {
-    const statusDiv = document.getElementById('status');
-    statusDiv.innerText = mensagem;
-    statusDiv.className = `status ${tipo}`;
+    const bar = document.getElementById('statusBar');
+    bar.textContent = mensagem;
+    bar.className = `status-bar show ${tipo}`;
+    
     setTimeout(() => {
-        statusDiv.innerText = '';
-        statusDiv.className = 'status';
+        bar.className = 'status-bar';
     }, 4000);
 }
 
@@ -936,24 +915,26 @@ function mostrarStatus(mensagem, tipo) {
 // INICIALIZAÇÃO
 // ============================================
 window.onload = function() {
-    console.log('🚀 Agente V5.1 iniciado - Versão sem dependência de API Google Maps');
+    console.log('🚀 Agente V6.0 iniciado - WhatsApp Web Integrado');
     
-    // Inicializar localStorage
     if (!localStorage.getItem('historicoMensagens')) {
         localStorage.setItem('historicoMensagens', JSON.stringify([]));
     }
     
-    atualizarEstatisticas();
     gerarMensagem();
     
-    mostrarStatus('✅ Sistema pronto! Cole um texto para começar.', 'info');
+    // Verificar WhatsApp a cada 10 segundos
+    setInterval(verificarConexaoWhatsApp, 10000);
+    
+    mostrarStatus('✅ Sistema pronto! Cole um texto e use o WhatsApp Web.', 'info');
+    document.getElementById('whatsappStatus').textContent = '🔄 Carregando WhatsApp Web...';
 };
 
-// Atalhos de teclado
+// Atalhos
 document.addEventListener('keydown', function(e) {
     if (e.ctrlKey && e.key === 'Enter') {
         e.preventDefault();
-        dispararWhatsApp();
+        enviarViaWhatsAppWeb();
     }
     if (e.ctrlKey && e.key === 'l') {
         e.preventDefault();
@@ -961,7 +942,7 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-console.log('📋 Agente V5.1 carregado com sucesso!');
+console.log('📋 Agente V6.0 com WhatsApp Web integrado - Pronto!');
 </script>
 </body>
 </html>
