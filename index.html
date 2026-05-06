@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agente de Mensagem Automatizado V5 - Sistema de Atendimento</title>
+    <meta name="description" content="Sistema automatizado de mensagens WhatsApp com assistente inteligente, anti-bloqueio e gestão de contatos">
+    <meta name="author" content="Israelson Diego Rodrigues Sevalho">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+
+    <!-- Google Maps API -->
+    <script>
+        const CONFIG = {
+            GOOGLE_MAPS_API_KEY: 'AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg',
+            VERSAO: '5.0.1',
+            MAX_TENTATIVAS_GEOCODE: 3,
+            TIMEOUT_CACHE_COORDENADAS: 3600000,
+            INTERVALO_BACKUP_AUTOMATICO: 86400000,
+        };
+        
+        const DDDS_VALIDOS = new Set([
+            11,12,13,14,15,16,17,18,19,21,22,24,27,28,
+            31,32,33,34,35,37,38,41,42,43,44,45,46,47,48,49,
+            51,53,54,55,61,62,63,64,65,66,67,68,69,
+            71,73,74,75,77,79,81,82,83,84,85,86,87,88,89,
+            91,92,93,94,95,96,97,98,99
+        ]);
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&libraries=places&callback=initGoogleMaps" async></script>
+
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        :root {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2a2a2a;
+            --bg-tertiary: #3d3d3d;
+            --text-primary: #e0e0e0;
+            --text-secondary: #999;
+            --accent-red: #d71920;
+            --accent-green: #28a745;
+            --accent-purple: #9b4dff;
+            --accent-yellow: #ffc107;
+            --border-color: #404040;
+            --success-bg: #1e3323;
+            --error-bg: #332323;
+            --warning-bg: #332e1f;
+            --info-bg: #1e2f3a;
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg-primary: #f5f5f5;
+                --bg-secondary: #ffffff;
+                --bg-tertiary: #e0e0e0;
+                --text-primary: #333333;
+                --text-secondary: #666666;
+                --border-color: #cccccc;
+                --success-bg: #d4edda;
+                --error-bg: #f8d7da;
+                --warning-bg: #fff3cd;
+                --info-bg: #d1ecf1;
+            }
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background: linear-gradient(135deg, var(--bg-primary) 0%, #0a0a0a 100%); 
+            padding: 20px; 
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .container { 
+            background: rgba(45,45,45,0.95); 
+            backdrop-filter: blur(10px); 
+            padding: 20px; 
+            max-width: 1600px; 
+            margin: auto; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5); 
+            border: 1px solid rgba(215,25,32,0.3); 
+        }
+
+        h2 { 
+            background: linear-gradient(135deg, var(--accent-red), #ff4444); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            background-clip: text; 
+            text-align: center; 
+            margin-bottom: 20px; 
+            font-size: 32px; 
+            text-transform: uppercase; 
+            letter-spacing: 2px; 
+        }
+
+        .version-badge {
+            text-align: center;
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: -15px;
+            margin-bottom: 15px;
+        }
+
+        .keyboard-hint {
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin: 10px 0;
+            opacity: 0.8;
+        }
+
+        .keyboard-hint kbd {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-family: monospace;
+            font-size: 10px;
+        }
+
+        .main-layout { 
+            display: grid; 
+            grid-template-columns: 1fr 380px 380px; 
+            gap: 20px; 
+        }
+
+        .left-panel { min-width: 0; }
+
+        .middle-panel, .right-panel { 
+            background: linear-gradient(135deg, var(--bg-secondary), #222); 
+            border-radius: 15px; 
+            overflow: hidden; 
+            border: 1px solid var(--border-color); 
+            display: flex; 
+            flex-direction: column; 
+        }
+
+        .map-preview { background: var(--bg-secondary); padding: 15px; border-bottom: 1px solid var(--border-color); }
+        .map-container { width: 100%; height: 200px; border-radius: 10px; overflow: hidden; margin-bottom: 10px; background: #333; position: relative; }
+        #map { width: 100%; height: 100%; }
+
+        .map-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #999;
+            font-size: 14px;
+            z-index: 1;
+        }
+
+        .address-confirm { background: var(--bg-secondary); border-radius: 10px; padding: 12px; margin-top: 10px; }
+        .address-confirm .label { font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; }
+        .address-confirm .value { font-size: 13px; font-weight: bold; color: var(--accent-red); word-break: break-word; }
+        .address-actions { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+        .btn-map { flex: 1; padding: 8px; border: none; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; transition: all 0.3s; min-width: 70px; }
+        .btn-map.confirm { background: var(--accent-green); color: white; }
+        .btn-map.edit { background: var(--accent-yellow); color: #333; }
+        .btn-map.location { background: #17a2b8; color: white; }
+        .btn-map.print { background: var(--accent-purple); color: white; }
+        .btn-map.copy { background: #00b894; color: white; }
+
+        .assistant-header { background: linear-gradient(135deg, #7b2cbf, var(--accent-purple)); padding: 15px; text-align: center; position: relative; }
+        .assistant-header h3 { color: white; font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .assistant-status { position: absolute; bottom: 5px; right: 15px; font-size: 10px; color: rgba(255,255,255,0.7); }
+
+        .insights-panel { padding: 15px; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); }
+        .insight-card { background: var(--bg-secondary); border-radius: 10px; padding: 10px; margin-bottom: 10px; border-left: 3px solid var(--accent-purple); }
+        .insight-card .title { font-weight: bold; color: var(--accent-purple); font-size: 12px; text-transform: uppercase; margin-bottom: 5px; }
+        .insight-card .content { font-size: 13px; color: var(--text-primary); line-height: 1.4; }
+
+        .chat-messages { flex: 1; overflow-y: auto; max-height: 350px; padding: 15px; background: var(--bg-primary); }
+        .chat-message { margin-bottom: 15px; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .message-assistant { display: flex; gap: 10px; align-items: flex-start; }
+        .message-assistant .avatar { width: 30px; height: 30px; background: linear-gradient(135deg, #7b2cbf, var(--accent-purple)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+        .message-assistant .text { flex: 1; background: var(--bg-secondary); padding: 10px; border-radius: 12px; font-size: 13px; line-height: 1.5; }
+        .message-user { display: flex; gap: 10px; align-items: flex-start; flex-direction: row-reverse; }
+        .message-user .avatar { width: 30px; height: 30px; background: var(--border-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+        .message-user .text { flex: 1; background: var(--accent-red); padding: 10px; border-radius: 12px; font-size: 13px; color: white; }
+
+        .chat-input-area { padding: 15px; background: var(--bg-secondary); border-top: 1px solid var(--border-color); display: flex; gap: 10px; }
+        .chat-input-area input { flex: 1; padding: 10px; background: var(--bg-tertiary); border: 1px solid #4a4a4a; color: var(--text-primary); border-radius: 8px; font-size: 13px; }
+        .chat-input-area input:focus { outline: none; border-color: var(--accent-purple); }
+        .chat-input-area button { padding: 10px 20px; background: var(--accent-purple); border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; transition: all 0.3s; }
+        .quick-actions { padding: 10px; display: flex; gap: 8px; flex-wrap: wrap; background: var(--bg-secondary); border-top: 1px solid var(--border-color); }
+        .quick-btn { padding: 5px 10px; background: var(--bg-tertiary); border: none; border-radius: 15px; color: var(--text-primary); font-size: 11px; cursor: pointer; transition: all 0.3s; }
+        .quick-btn:hover { background: var(--accent-purple); transform: translateY(-1px); }
+
+        .tab-buttons { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn { background: var(--border-color); color: var(--text-primary); border: none; padding: 10px 20px; cursor: pointer; border-radius: 8px; font-size: 14px; transition: all 0.3s; }
+        .tab-btn.active { background: var(--accent-red); color: #fff; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .anti-block-panel { background: var(--bg-secondary); border-radius: 10px; border: 1px solid var(--border-color); padding: 10px; margin-bottom: 15px; }
+        .anti-block-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .anti-block-title { color: var(--accent-red); font-weight: bold; font-size: 14px; }
+        .timer-display { font-family: monospace; font-weight: bold; text-align: center; background: #000; border-radius: 8px; letter-spacing: 2px; font-size: 32px; padding: 10px; }
+        .progress-bar { width: 100%; height: 4px; background: #333; border-radius: 2px; overflow: hidden; margin-top: 8px; }
+        .progress-fill { height: 100%; background: var(--accent-red); transition: width 0.3s ease; }
+
+        .template-selector {
+            background: var(--bg-secondary);
+            border: 1px solid var(--accent-purple);
+            border-radius: 10px;
+            padding: 12px;
+            margin: 10px 0;
+        }
+        .template-selector h4 { color: var(--accent-purple); margin-bottom: 8px; font-size: 13px; }
+        .template-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+        .template-btn { padding: 6px 12px; background: var(--bg-tertiary); border: 1px solid var(--accent-purple); border-radius: 15px; color: var(--text-primary); font-size: 11px; cursor: pointer; transition: all 0.3s; }
+        .template-btn:hover { background: var(--accent-purple); transform: translateY(-1px); }
+        .template-btn.active { background: var(--accent-purple); color: white; }
+
+        .telefones-container { 
+            display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; padding: 10px; 
+            background: #333; border-radius: 8px; border: 1px solid #4a4a4a; max-height: 120px; overflow-y: auto; 
+        }
+        .telefone-option { 
+            padding: 8px 15px; background: var(--border-color); border-radius: 6px; cursor: pointer; 
+            transition: all 0.3s; position: relative; font-size: 14px; display: flex; align-items: center; gap: 5px; 
+        }
+        .telefone-option:hover { background: var(--accent-red); transform: translateX(3px); }
+        .telefone-option.selected { background: var(--accent-green); color: white; }
+        .telefone-option.ja-enviado { background: var(--accent-yellow); color: #333; opacity: 0.7; }
+        .telefone-option.verificado { border-left: 3px solid var(--accent-green); }
+        .telefone-option.nao-respondeu { border-left: 3px solid #dc3545; }
+        .telefone-option.pendente { border-left: 3px solid var(--accent-yellow); }
+
+        .badge { 
+            background: var(--accent-red); color: white; border-radius: 50%; width: 20px; height: 20px; 
+            display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; 
+        }
+
+        .checkbox-group { display: flex; gap: 20px; margin: 10px 0; flex-wrap: wrap; }
+        .checkbox-group label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; }
+        .button-group { display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
+
+        button { 
+            padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; 
+            font-weight: bold; transition: all 0.3s; 
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 3px 10px rgba(0,0,0,0.3); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        textarea, input[type="text"] { 
+            width: 100%; padding: 12px; background: var(--bg-tertiary); 
+            border: 1px solid #4a4a4a; color: var(--text-primary); 
+            border-radius: 8px; font-size: 13px; margin-top: 8px; resize: vertical; 
+        }
+        textarea:focus, input:focus { outline: none; border-color: var(--accent-red); }
+
+        .status { margin-top: 10px; padding: 10px; border-radius: 8px; display: none; }
+        .status.success { display: block; background: var(--success-bg); color: var(--accent-green); border: 1px solid var(--accent-green); }
+        .status.error { display: block; background: var(--error-bg); color: #dc3545; border: 1px solid #dc3545; }
+        .status.info { display: block; background: var(--info-bg); color: #17a2b8; border: 1px solid #17a2b8); }
+        .status.warning { display: block; background: var(--warning-bg); color: var(--accent-yellow); border: 1px solid var(--accent-yellow); }
+
+        .whatsapp-direct { 
+            background: var(--bg-secondary); border-radius: 10px; border: 1px solid #25D366; 
+            padding: 15px; margin-top: 15px; 
+        }
+        .whatsapp-direct h4 { color: #25D366; margin-bottom: 10px; font-size: 14px; }
+        .whatsapp-input-group { display: flex; gap: 10px; margin-bottom: 10px; }
+        .whatsapp-input-group input { flex: 1; margin-top: 0; }
+        .whatsapp-input-group button { background: #25D366; padding: 10px 20px; white-space: nowrap; }
+
+        .lembrete-item { 
+            background: var(--bg-secondary); padding: 10px; margin-bottom: 8px; border-radius: 8px; 
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; 
+        }
+        .lembrete-item.ja-enviado { opacity: 0.6; border-left: 3px solid var(--accent-yellow); }
+        .lembrete-info { flex: 1; }
+        .lembrete-info strong { color: var(--accent-purple); }
+        .lembrete-checkbox { margin-right: 10px; transform: scale(1.2); cursor: pointer; }
+
+        .batch-actions { 
+            background: #1e3c72; padding: 10px; border-radius: 8px; margin-bottom: 15px; 
+            display: flex; gap: 10px; align-items: center; flex-wrap: wrap; 
+        }
+        .batch-actions button { background: #25D366; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #4a4a4a; }
+        th { background: var(--border-color); color: #fff; }
+
+        .contador { font-size: 12px; color: var(--text-secondary); margin-top: 5px; text-align: right; }
+
+        .footer { 
+            margin-top: 30px; padding: 20px; background: var(--bg-primary); 
+            border-radius: 8px; text-align: center; font-size: 12px; border: 1px solid var(--border-color); 
+        }
+        .dev-info { font-size: 14px; font-weight: bold; margin-bottom: 5px; color: var(--accent-purple); }
+
+        .aviso-duplicado { 
+            background: var(--warning-bg); border: 1px solid var(--accent-yellow); 
+            border-radius: 8px; padding: 10px; margin: 10px 0; color: var(--accent-yellow); 
+            font-size: 12px; display: none; 
+        }
+        .aviso-duplicado.show { display: block; }
+
+        .assistente-container { 
+            position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: none; 
+            animation: assistentePop 0.4s cubic-bezier(0.34, 1.2, 0.64, 1); 
+        }
+        @keyframes assistentePop { 
+            from { opacity: 0; transform: translateY(100px) scale(0.7); } 
+            to { opacity: 1; transform: translateY(0) scale(1); } 
+        }
+        .assistente-card { 
+            background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 16px; 
+            box-shadow: 0 12px 28px rgba(0,0,0,0.5); width: 340px; overflow: hidden; 
+            border: 1px solid #6c5ce7; 
+        }
+        .assistente-body { padding: 15px; background: #1e1e2e; }
+        .assistente-message { color: #e0e0e0; font-size: 13px; line-height: 1.5; }
+        .assistente-message strong { color: #a29bfe; }
+        .assistente-confirmation-box { background: #2d2d44; padding: 12px; border-radius: 12px; margin-top: 10px; border-left: 3px solid #6c5ce7; }
+        .assistente-confirmation-buttons { display: flex; gap: 10px; margin-top: 10px; }
+        .assistente-confirmation-buttons button { flex: 1; padding: 8px; border-radius: 20px; font-size: 11px; cursor: pointer; }
+        .btn-confirm-yes { background: #00b894; color: white; }
+        .btn-confirm-no { background: #d63031; color: white; }
+        .btn-confirm-pending { background: #fdcb6e; color: #2d3436; }
+        .assistente-footer { padding: 12px; background: #16213e; display: flex; gap: 12px; justify-content: flex-end; }
+        .assistente-footer button { background: #2d2d44; border: 1px solid #6c5ce7; border-radius: 20px; padding: 6px 18px; cursor: pointer; color: #a29bfe; }
+
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 10000; }
+        .toast { 
+            background: var(--bg-secondary); border-left: 4px solid var(--accent-green); 
+            color: var(--text-primary); padding: 12px 20px; margin-bottom: 10px; border-radius: 8px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); animation: toastIn 0.3s ease; min-width: 250px; font-size: 13px; 
+        }
+        @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        @media (max-width: 1200px) { 
+            .main-layout { grid-template-columns: 1fr; } 
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            h2 { font-size: 24px; }
+            .container { padding: 15px; }
+            .tab-btn { padding: 8px 15px; font-size: 12px; }
+            .button-group { flex-direction: column; }
+            .button-group button { width: 100%; }
+            .whatsapp-input-group { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="container">
+    <h2>⚡ Agente de Mensagem Automatizado V5 ⚡</h2>
+    <div class="version-badge">Versão 5.0.1 | Sistema de Atendimento WhatsApp</div>
+    
+    <div class="keyboard-hint">
+        ⌨️ Atalhos: <kbd>Ctrl+Enter</kbd> Enviar | <kbd>Ctrl+L</kbd> Limpar | 
+        <kbd>Ctrl+S</kbd> Status | <kbd>Ctrl+B</kbd> Backup | <kbd>Ctrl+1-5</kbd> Abas
+    </div>
+    
+    <div class="main-layout">
+        <!-- PAINEL ESQUERDO -->
+        <div class="left-panel">
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="showTab('gerador', this)">⚡ Gerador</button>
+                <button class="tab-btn" onclick="showTab('relatorio', this)">📊 Relatório</button>
+                <button class="tab-btn" onclick="showTab('antiblocks', this)">🛡️ Anti-Block</button>
+                <button class="tab-btn" onclick="showTab('lembretes', this)">📅 Lembretes</button>
+                <button class="tab-btn" onclick="showTab('analytics', this)">📈 Analytics</button>
+            </div>
+            
+            <div id="gerador" class="tab-content active">
+                <div class="template-selector">
+                    <h4>📋 Templates de Mensagem</h4>
+                    <div class="template-buttons" id="templateButtons">
+                        <button class="template-btn active" data-template="padrao">💬 Padrão</button>
+                        <button class="template-btn" data-template="confirmacao">✅ Confirmação</button>
+                        <button class="template-btn" data-template="lembrete">🔔 Lembrete</button>
+                        <button class="template-btn" data-template="rapido">⚡ Rápido</button>
+                    </div>
+                </div>
+                
+                <div class="anti-block-panel">
+                    <div class="anti-block-header">
+                        <div class="anti-block-title">🛡️ PROTEÇÃO ANTI-BLOQUEIO</div>
+                        <select id="timerIntervalo" onchange="configurarTimer()" style="padding:5px 10px; background:#333; color:#fff; border-radius:6px;">
+                            <option value="30">30s</option>
+                            <option value="60" selected>1 min</option>
+                            <option value="120">2 min</option>
+                            <option value="300">5 min</option>
+                        </select>
+                    </div>
+                    <div class="timer-display" id="timerDisplay">00:00</div>
+                    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:100%;"></div></div>
+                </div>
+                
+                <div id="avisoDuplicado" class="aviso-duplicado">
+                    ⚠️ <span id="avisoDuplicadoTexto"></span>
+                </div>
+                
+                <label>📋 Cole aqui o texto copiado:</label>
+                <textarea id="fonte" placeholder="Cole o texto completo aqui... O assistente vai extrair os dados automaticamente!" oninput="processarTextoCompleto()" rows="4"></textarea>
+                
+                <label>📱 TELEFONES DETECTADOS:</label>
+                <div id="telefones-container" class="telefones-container">
+                    <div style="color:#999; text-align:center; padding:20px; width:100%;">Aguardando dados...</div>
+                </div>
+                
+                <label>📱 NÚMERO SELECIONADO:</label>
+                <input type="text" id="telefone" placeholder="Selecione um telefone acima..." readonly>
+                
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="copiarClipboard" checked> 📋 Copiar mensagem</label>
+                    <label><input type="checkbox" id="ativarAntiBlock" checked onchange="atualizarTimer()"> 🛡️ Anti-bloqueio</label>
+                    <label><input type="checkbox" id="incluirAgenda" checked onchange="gerarMensagem()"> 📅 Incluir oferta de agenda</label>
+                    <label><input type="checkbox" id="incluirLocalizacao" checked onchange="gerarMensagem()"> 📍 Incluir localização</label>
+                    <label><input type="checkbox" id="incluirPrintMapa" checked> 🖼️ Incluir Print do Mapa</label>
+                    <label><input type="checkbox" id="marcarLembrete" onchange="toggleLembrete()"> 🔔 Marcar para lembrete</label>
+                </div>
+                
+                <div class="button-group">
+                    <button onclick="dispararWhatsApp()" style="background:#25D366; flex:2;" id="btnDisparo">💬 ENVIAR WHATSAPP</button>
+                    <button onclick="adicionarAoLembrete()" style="background:#ffc107; color:#333;" id="btnAdicionarLembrete">📅 LEMBRETE</button>
+                    <button onclick="limparTudo()" style="background:#6c757d;">🗑️ LIMPAR</button>
+                </div>
+                
+                <label>📝 Mensagem gerada:</label>
+                <textarea id="resultado" readonly rows="5" placeholder="A mensagem será gerada automaticamente..."></textarea>
+                <div class="contador" id="contador">Caracteres: 0</div>
+                
+                <div class="whatsapp-direct">
+                    <h4>📱 WHATSAPP DIRETO</h4>
+                    <div class="whatsapp-input-group">
+                        <input type="text" id="whatsappNumero" placeholder="Número: (11) 91234-5678" value="">
+                        <button onclick="enviarWhatsAppDireto()" style="background:#25D366;">💬 ENVIAR</button>
+                    </div>
+                    <div style="font-size:11px; color:#999; margin-top:8px;">
+                        💡 O WhatsApp será aberto no aplicativo instalado no seu computador
+                    </div>
+                </div>
+                
+                <div id="status" class="status"></div>
+            </div>
+            
+            <div id="relatorio" class="tab-content">
+                <h3>📊 Histórico de Disparos</h3>
+                <div class="button-group">
+                    <button onclick="exportarRelatorio()">📥 Exportar CSV</button>
+                    <button onclick="gerenciadorBackup.exportarCompleto()">💾 Backup</button>
+                    <button onclick="document.getElementById('inputImportBackup').click()">📥 Importar</button>
+                    <input type="file" id="inputImportBackup" style="display:none" accept=".json" onchange="importarBackupArquivo(this)">
+                    <button onclick="limparHistorico()">🗑️ Limpar</button>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table id="tabela-relatorio">
+                        <thead><tr><th>Data/Hora</th><th>Contrato</th><th>Nome</th><th>Telefone</th><th>Cidade/UF</th><th>Status</th><th>Confirmação</th></tr></thead>
+                        <tbody id="relatorio-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div id="antiblocks" class="tab-content">
+                <h3>🛡️ Estatísticas Anti-Block</h3>
+                <div style="background:#333; padding:15px; border-radius:8px;">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                        <div><div style="color:#999;">Total disparos</div><div style="font-size:24px; font-weight:bold; color:#28a745;" id="totalDisparosGeral">0</div></div>
+                        <div><div style="color:#999;">Taxa confirmação</div><div style="font-size:24px; font-weight:bold; color:#ffc107;" id="taxaConfirmacao">0%</div></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="lembretes" class="tab-content">
+                <h3>📅 Clientes com Lembrete</h3>
+                <div class="batch-actions">
+                    <span style="color:white; font-weight:bold;">📦 Disparo em Lote:</span>
+                    <button onclick="dispararLoteSelecionados()">🚀 ENVIAR SELECIONADOS</button>
+                    <button onclick="selecionarTodosLembretes()" style="background:#17a2b8;">✅ Todos</button>
+                    <button onclick="deselecionarTodosLembretes()" style="background:#6c757d;">❌ Desmarcar</button>
+                    <button onclick="limparLembretesDuplicados()" style="background:#ffc107; color:#333;">🔄 Limpar Duplicados</button>
+                </div>
+                <div id="lembretesList" style="max-height: 400px; overflow-y: auto;"></div>
+            </div>
+            
+            <div id="analytics" class="tab-content">
+                <h3>📈 Análise Inteligente</h3>
+                <div class="insight-card"><div class="title">🎯 Probabilidade Confirmação</div><div class="content" id="predictionRate">--</div></div>
+                <div class="insight-card"><div class="title">⏰ Melhor Horário</div><div class="content" id="bestHour">--</div></div>
+                <div class="insight-card"><div class="title">📊 Taxa de Resposta</div><div class="content" id="responseRate">--</div></div>
+                <div class="insight-card"><div class="title">📋 Contratos Ativados</div><div class="content" id="contratosAtivados">--</div></div>
+            </div>
+        </div>
+        
+        <!-- PAINEL DO MEIO -->
+        <div class="middle-panel">
+            <div class="assistant-header">
+                <h3>🤖 Agente Automático</h3>
+                <div class="assistant-status" id="mapStatus">Carregando mapa...</div>
+            </div>
+            <div class="map-preview">
+                <div class="map-container" id="mapContainer">
+                    <div id="map">
+                        <div class="map-loading" id="mapLoading">🗺️ Carregando mapa...</div>
+                    </div>
+                </div>
+                <div class="address-confirm">
+                    <div class="label">📍 ENDEREÇO DETECTADO:</div>
+                    <div class="value" id="detectedAddress">Aguardando texto...</div>
+                    <div class="label">🏙️ CIDADE / ESTADO:</div>
+                    <div class="value" id="cidadeEstado">-</div>
+                    <div class="label">🌐 COORDENADAS:</div>
+                    <div class="value" id="coordinates">-</div>
+                    <div class="address-actions">
+                        <button class="btn-map edit" onclick="editarEndereco()">✏️ EDITAR</button>
+                        <button class="btn-map location" onclick="buscarLocalizacaoAtual()">📍 MINHA LOCAL</button>
+                        <button class="btn-map print" onclick="capturarPrintMapa()">📸 PRINT</button>
+                        <button class="btn-map copy" onclick="copiarLocalizacao()">📋 COPIAR</button>
+                    </div>
+                    <div id="printStatus" style="font-size:11px; color:#9b4dff; margin-top:8px;"></div>
+                    <div id="printPreview" style="margin-top:10px;"></div>
+                </div>
+            </div>
+            <div class="insights-panel">
+                <div class="insight-card">
+                    <div class="title">📊 Análise do Agente</div>
+                    <div class="content" id="instantAnalysis">Aguardando dados...</div>
+                </div>
+                <div class="insight-card">
+                    <div class="title">🛡️ Status de Duplicidade</div>
+                    <div class="content" id="statusDuplicidade">Nenhum dado carregado</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- PAINEL DIREITO -->
+        <div class="right-panel">
+            <div class="assistant-header">
+                <h3>✨ Assistente Virtual</h3>
+                <div class="assistant-status">IA de Atendimento</div>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="chat-message">
+                    <div class="message-assistant">
+                        <div class="avatar">✨</div>
+                        <div class="text">
+                            👋 Olá! Sou seu <strong>Assistente Virtual V5</strong>!<br><br>
+                            ✅ Extraio dados automaticamente<br>
+                            🗺️ Identifico cidade/estado<br>
+                            🔍 Verifico duplicidades<br>
+                            📊 Analiso probabilidades<br>
+                            💾 Faço backup automático<br><br>
+                            Cole um texto ou use os botões abaixo!
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chatInput" placeholder="Digite 'status', 'lembretes' ou sua pergunta..." onkeypress="if(event.key==='Enter') enviarMensagemChat()">
+                <button onclick="enviarMensagemChat()">➤</button>
+            </div>
+            <div class="quick-actions">
+                <button class="quick-btn" onclick="quickAction('status')">📊 Status</button>
+                <button class="quick-btn" onclick="quickAction('lembretes')">📅 Lembretes</button>
+                <button class="quick-btn" onclick="quickAction('contratos')">📋 Contratos</button>
+                <button class="quick-btn" onclick="quickAction('duplicados')">🔄 Duplicados</button>
+                <button class="quick-btn" onclick="quickAction('analisar')">🔍 Analisar</button>
+                <button class="quick-btn" onclick="capturarPrintMapa()">📸 Print</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <div class="dev-info">⚡ Desenvolvido por Israelson Diego Rodrigues Sevalho | Agente V5 ⚡</div>
+        <div style="color:#999; font-size:11px; margin-top:5px;">
+            Templates inteligentes | Validação de DDD | Cache otimizado | Backup automático | GitHub Pages
+        </div>
+    </div>
+</div>
+
+<!-- ASSISTENTE POPUP -->
+<div id="assistenteContainer" class="assistente-container">
+    <div class="assistente-card">
+        <div class="assistant-header">
+            <div style="display:flex;align-items:center;gap:8px;font-weight:bold;color:#a29bfe;">
+                <span>✨🧞</span><span>Assistente V5</span>
+            </div>
+            <button onclick="esconderAssistente()" style="background:#2d2d44;border:1px solid #6c5ce7;border-radius:6px;width:26px;height:26px;cursor:pointer;color:#a29bfe;">✖</button>
+        </div>
+        <div class="assistente-body">
+            <div class="assistente-message" id="assistenteMessage">
+                <strong>✨ Assistente</strong><br>Vou cobrar as confirmações!
+            </div>
+            <div id="assistenteConfirmationBox" class="assistente-confirmation-box" style="display:none;">
+                <div id="confirmationQuestion" style="color:#e0e0e0;font-size:12px;"></div>
+                <div class="assistente-confirmation-buttons">
+                    <button class="btn-confirm-yes" onclick="registrarConfirmacao(true)">✅ Confirmou</button>
+                    <button class="btn-confirm-no" onclick="registrarConfirmacao(false)">❌ Não</button>
+                    <button class="btn-confirm-pending" onclick="adiarConfirmacao()">⏰ Depois</button>
+                </div>
+            </div>
+        </div>
+        <div class="assistente-footer">
+            <button onclick="esconderAssistente()">OK</button>
+            <button onclick="mostrarDicaAssistente()">✨ Dica</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================
+// SISTEMA DE ÁUDIO
+// ============================================
+const AudioFeedback = {
+    context: null,
+    init() {
+        try { this.context = new (window.AudioContext || window.webkitAudioContext)(); } 
+        catch(e) { console.log('Áudio não suportado'); }
+    },
+    tocar(tipo) {
+        if (!this.context) return;
+        const osc = this.context.createOscillator();
+        const gain = this.context.createGain();
+        osc.connect(gain); gain.connect(this.context.destination);
+        switch(tipo) {
+            case 'success':
+                osc.frequency.setValueAtTime(800, this.context.currentTime);
+                osc.frequency.setValueAtTime(1200, this.context.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, this.context.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.3);
+                osc.start(this.context.currentTime); osc.stop(this.context.currentTime + 0.3);
+                break;
+            case 'error':
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(400, this.context.currentTime);
+                osc.frequency.setValueAtTime(200, this.context.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.2, this.context.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.4);
+                osc.start(this.context.currentTime); osc.stop(this.context.currentTime + 0.4);
+                break;
+            case 'click':
+                osc.frequency.setValueAtTime(600, this.context.currentTime);
+                gain.gain.setValueAtTime(0.1, this.context.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.1);
+                osc.start(this.context.currentTime); osc.stop(this.context.currentTime + 0.1);
+                break;
+            case 'notification':
+                osc.frequency.setValueAtTime(1000, this.context.currentTime);
+                osc.frequency.setValueAtTime(800, this.context.currentTime + 0.15);
+                osc.frequency.setValueAtTime(1200, this.context.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.2, this.context.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.5);
+                osc.start(this.context.currentTime); osc.stop(this.context.currentTime + 0.5);
+                break;
+        }
+    }
+};
+
+// ============================================
+// TOAST
+// ============================================
+const Toast = {
+    container: null,
+    init() { this.container = document.getElementById('toastContainer'); },
+    mostrar(mensagem, tipo = 'success', duracao = 3000) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.style.borderLeftColor = tipo === 'error' ? '#dc3545' : tipo === 'warning' ? '#ffc107' : '#28a745';
+        toast.textContent = mensagem;
+        this.container.appendChild(toast);
+        setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, duracao);
+    }
+};
+
+// ============================================
+// CACHE MANAGER
+// ============================================
+class CacheManager {
+    constructor() { this.prefix = 'cache_v5_'; this.defaultTTL = CONFIG.TIMEOUT_CACHE_COORDENADAS; }
+    set(key, value, ttl = this.defaultTTL) {
+        const item = { value, expiry: Date.now() + ttl, timestamp: new Date().toISOString() };
+        try { localStorage.setItem(this.prefix + key, JSON.stringify(item)); } 
+        catch(e) { this.limparAntigos(); }
+    }
+    get(key) {
+        const item = localStorage.getItem(this.prefix + key);
+        if (!item) return null;
+        try {
+            const parsed = JSON.parse(item);
+            if (Date.now() > parsed.expiry) { localStorage.removeItem(this.prefix + key); return null; }
+            return parsed.value;
+        } catch(e) { return null; }
+    }
+    limparAntigos() {
+        const keys = Object.keys(localStorage).filter(k => k.startsWith(this.prefix));
+        keys.sort((a, b) => (JSON.parse(localStorage.getItem(a)).timestamp || '').localeCompare(JSON.parse(localStorage.getItem(b)).timestamp || ''));
+        const remover = Math.ceil(keys.length * 0.2);
+        keys.slice(0, remover).forEach(key => localStorage.removeItem(key));
+    }
+    clearAll() { Object.keys(localStorage).filter(k => k.startsWith(this.prefix)).forEach(k => localStorage.removeItem(k)); }
+}
+const cacheManager = new CacheManager();
+
+// ============================================
+// BACKUP MANAGER
+// ============================================
+class GerenciadorBackup {
+    constructor() { this.keys = ['historicoMensagens', 'confirmacoesPendentes', 'historicoConfirmacoes', 'lembretes']; }
+    exportarCompleto() {
+        const backup = { versao: CONFIG.VERSAO, dataExportacao: new Date().toISOString(), dados: {}, metadados: {} };
+        this.keys.forEach(key => { backup.dados[key] = JSON.parse(localStorage.getItem(key) || '[]'); });
+        backup.metadados = { totalMensagens: backup.dados.historicoMensagens.length, totalLembretes: backup.dados.lembretes.length, totalConfirmacoes: backup.dados.historicoConfirmacoes.length };
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `backup_agente_v5_${new Date().toISOString().split('T')[0]}.json`;
+        a.click(); URL.revokeObjectURL(url);
+        AudioFeedback.tocar('success');
+        mostrarStatus('💾 Backup exportado!', 'success');
+        Toast.mostrar('💾 Backup completo exportado!', 'success');
+    }
+    importarCompleto(arquivo) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const backup = JSON.parse(e.target.result);
+                    if (!backup.versao || !backup.dados) throw new Error('Arquivo inválido');
+                    Object.keys(backup.dados).forEach(key => { localStorage.setItem(key, JSON.stringify(backup.dados[key])); });
+                    AudioFeedback.tocar('notification');
+                    resolve(backup.metadados);
+                } catch (error) { AudioFeedback.tocar('error'); reject(error); }
+            };
+            reader.onerror = () => { AudioFeedback.tocar('error'); reject(new Error('Erro ao ler arquivo')); };
+            reader.readAsText(arquivo);
+        });
+    }
+    agendarBackupAutomatico() {
+        setInterval(() => {
+            const backup = { versao: CONFIG.VERSAO, dataExportacao: new Date().toISOString(), dados: {} };
+            this.keys.forEach(key => { backup.dados[key] = JSON.parse(localStorage.getItem(key) || '[]'); });
+            localStorage.setItem('backup_automatico', JSON.stringify(backup));
+        }, CONFIG.INTERVALO_BACKUP_AUTOMATICO);
+    }
+}
+const gerenciadorBackup = new GerenciadorBackup();
+
+// ============================================
+// TEMPLATES
+// ============================================
+const TemplateMensagens = {
+    templates: {
+        padrao: {
+            nome: 'Padrão Completo',
+            gerar: (dados) => {
+                const hora = new Date().getHours();
+                const saudacao = hora >= 5 && hora < 12 ? "Bom dia" : (hora >= 12 && hora < 18 ? "Boa tarde" : "Boa noite");
+                let msg = `${saudacao}! Como você está? 😊\n\nAqui quem fala é a equipe de atendimento. Estamos passando para oferecer um atendimento especial para você.\n\n📋 **Seus dados:**\n• Nome: ${dados.nome}\n• Contrato: ${dados.contrato}\n• Endereço: ${dados.endereco}\n• Bairro: ${dados.bairro}`;
+                if (dados.cidade) msg += `\n• Cidade/UF: ${dados.cidade}${dados.estado ? '/' + dados.estado : ''}`;
+                if (document.getElementById('incluirAgenda')?.checked) msg += `\n\n📅 **Atendimento:** Conseguimos um horário hoje ainda para você! 🗓️\n✨ Confirme respondendo esta mensagem.`;
+                return msg;
+            }
+        },
+        confirmacao: {
+            nome: 'Confirmação Rápida',
+            gerar: (dados) => {
+                const hora = new Date().getHours();
+                const saudacao = hora >= 5 && hora < 12 ? "Bom dia" : (hora >= 12 && hora < 18 ? "Boa tarde" : "Boa noite");
+                return `${saudacao} ${dados.nome}! 😊\n\nConseguimos um horário especial para você hoje! 🗓️\n\n📄 Contrato: ${dados.contrato}\n📍 ${dados.endereco}\n${dados.cidade ? `🏙️ ${dados.cidade}${dados.estado ? '/' + dados.estado : ''}\n` : ''}\n⚠️ Confirme respondendo esta mensagem!\n✅ Responda SIM para confirmar`;
+            }
+        },
+        lembrete: {
+            nome: 'Lembrete',
+            gerar: (dados) => `🔔 *LEMBRETE DE ATENDIMENTO*\n\nOlá ${dados.nome}!\n\nNão se esqueça do nosso atendimento de hoje.\n\n📄 Contrato: ${dados.contrato}\n📍 ${dados.endereco}, ${dados.bairro}\n${dados.cidade ? `🏙️ ${dados.cidade}${dados.estado ? '/' + dados.estado : ''}\n` : ''}\nQualquer dúvida, estamos à disposição! 📱`
+        },
+        rapido: {
+            nome: 'Rápido',
+            gerar: (dados) => {
+                const hora = new Date().getHours();
+                const saudacao = hora >= 5 && hora < 12 ? "Bom dia" : (hora >= 12 && hora < 18 ? "Boa tarde" : "Boa noite");
+                let msg = `${saudacao} ${dados.nome}! 👋\n\nTenho uma oportunidade especial para você.\n📄 Contrato: ${dados.contrato}\n📍 ${dados.endereco}`;
+                if (dados.cidade) msg += ` - ${dados.cidade}${dados.estado ? '/' + dados.estado : ''}`;
+                msg += `\n\n✅ Pode me responder?`;
+                return msg;
+            }
+        }
+    },
+    templateAtual: 'padrao',
+    selecionar(id) { this.templateAtual = id; gerarMensagem(); },
+    gerarMensagem(dados) {
+        const template = this.templates[this.templateAtual] || this.templates.padrao;
+        let msg = template.gerar(dados);
+        if (document.getElementById('incluirLocalizacao')?.checked && currentAddress !== "NÃO INFORMADO") {
+            const mapsLink = `https://www.google.com/maps/search/?api=1&query=${currentCoordinates.lat},${currentCoordinates.lng}`;
+            msg += `\n\n📍 **Localização:**\n${currentAddress}\n🏙️ ${currentCity}${currentState ? '/' + currentState : ''}\n🗺️ ${mapsLink}`;
+        }
+        if (document.getElementById('incluirPrintMapa')?.checked && ultimoPrintBase64) msg += `\n\n🖼️ **Mapa em anexo**`;
+        const hora = new Date().getHours();
+        msg += `\n\n💬 Aguardo sua confirmação! ❤️\nTenha um excelente ${hora < 12 ? 'dia' : (hora < 18 ? 'tarde' : 'noite')}!`;
+        return msg;
+    }
+};
+
+// ============================================
+// VALIDAÇÃO DE TELEFONE
+// ============================================
+function validarTelefone(numero) {
+    const limpo = numero.replace(/\D/g, '');
+    if (limpo.length !== 10 && limpo.length !== 11) return { valido: false, motivo: 'Número deve ter 10 ou 11 dígitos' };
+    const ddd = parseInt(limpo.substring(0, 2));
+    if (!DDDS_VALIDOS.has(ddd)) return { valido: false, motivo: `DDD ${ddd} inválido` };
+    if (limpo.length === 11 && parseInt(limpo[2]) !== 9) return { valido: false, motivo: '11 dígitos mas nono dígito não é 9' };
+    if (/^(\d)\1+$/.test(limpo)) return { valido: false, motivo: 'Número inválido (dígitos repetidos)' };
+    return { valido: true };
+}
+
+function formatarTelefone(numero) {
+    if (!numero) return '';
+    const n = numero.toString();
+    if (n.length === 11) return `(${n.substring(0,2)}) ${n.substring(2,3)} ${n.substring(3,7)}-${n.substring(7)}`;
+    if (n.length === 10) return `(${n.substring(0,2)}) ${n.substring(2,6)}-${n.substring(6)}`;
+    return numero;
+}
+
+// ============================================
+// VARIÁVEIS GLOBAIS
+// ============================================
+let map, geocoder, currentMarker;
+let mapaCarregado = false;
+let currentAddress = "";
+let currentCoordinates = { lat: -23.5505, lng: -46.6333 };
+let currentCity = "";
+let currentState = "";
+let dadosAtuais = { numero: '', contrato: 'N/A', nome: 'NÃO IDENTIFICADO', endereco: 'NÃO INFORMADO', bairro: 'NÃO INFORMADO', cidade: '', estado: '', cep: 'N/A', mensagem: '', telefonesDisponiveis: [] };
+let ultimoDisparoTimestamp = localStorage.getItem('ultimoDisparoTimestamp') ? parseInt(localStorage.getItem('ultimoDisparoTimestamp')) : 0;
+let timerInterval;
+let confirmacoesPendentes = JSON.parse(localStorage.getItem('confirmacoesPendentes') || '[]');
+let historicoConfirmacoes = JSON.parse(localStorage.getItem('historicoConfirmacoes') || '[]');
+let lembretes = JSON.parse(localStorage.getItem('lembretes') || '[]');
+let ultimoPrintBase64 = null;
+let clienteJaContatado = false;
+let infoClienteExistente = null;
+
+// ============================================
+// INICIALIZAÇÃO DO MAPA
+// ============================================
+function initGoogleMaps() {
+    console.log('🗺️ Google Maps API carregada!');
+    try {
+        geocoder = new google.maps.Geocoder();
+        const mapElement = document.getElementById("map");
+        if (!mapElement) { console.error('Elemento #map não encontrado'); return; }
+        
+        map = new google.maps.Map(mapElement, {
+            center: currentCoordinates, zoom: 15,
+            styles: [{ featureType: "all", elementType: "geometry", stylers: [{ color: "#404040" }] }]
+        });
+        currentMarker = new google.maps.Marker({ position: currentCoordinates, map: map, title: "Localização", animation: google.maps.Animation.DROP });
+        mapaCarregado = true;
+        
+        const loadingEl = document.getElementById('mapLoading');
+        if (loadingEl) loadingEl.style.display = 'none';
+        document.getElementById('mapStatus').textContent = '✅ Mapa ativo';
+        
+        console.log('✅ Mapa inicializado');
+    } catch (error) {
+        console.error('❌ Erro mapa:', error);
+        document.getElementById('mapStatus').textContent = '❌ Erro no mapa';
+    }
+}
+
+// ============================================
+// FUNÇÕES DO MAPA
+// ============================================
+function extrairCidadeEstadoViaGeocoding(address) {
+    if (!mapaCarregado || !geocoder || !address || address === "NÃO INFORMADO") return;
+    const cacheKey = `geocode_${address.substring(0, 50)}`;
+    const cached = cacheManager.get(cacheKey);
+    if (cached) {
+        currentCoordinates = cached.coordinates; currentCity = cached.cidade; currentState = cached.estado;
+        if (map) { map.setCenter(currentCoordinates); map.setZoom(16); }
+        if (currentMarker) currentMarker.setMap(null);
+        if (map) currentMarker = new google.maps.Marker({ position: currentCoordinates, map: map, title: address });
+        document.getElementById("coordinates").innerHTML = `${currentCoordinates.lat.toFixed(6)}, ${currentCoordinates.lng.toFixed(6)}`;
+        document.getElementById('cidadeEstado').innerHTML = `${currentCity}${currentState ? '/' + currentState : ''}`;
+        dadosAtuais.cidade = currentCity; dadosAtuais.estado = currentState;
+        gerarMensagem();
+        return;
+    }
+    
+    geocoder.geocode({ address: address + ", Brasil" }, (results, status) => {
+        if (status === "OK" && results && results[0]) {
+            const location = results[0].geometry.location;
+            currentCoordinates = { lat: location.lat(), lng: location.lng() };
+            if (map) { map.setCenter(currentCoordinates); map.setZoom(16); }
+            if (currentMarker) currentMarker.setMap(null);
+            if (map) currentMarker = new google.maps.Marker({ position: currentCoordinates, map: map, title: address });
+            document.getElementById("coordinates").innerHTML = `${currentCoordinates.lat.toFixed(6)}, ${currentCoordinates.lng.toFixed(6)}`;
+            
+            let cidade = '', estado = '';
+            results[0].address_components.forEach(c => {
+                if (c.types.includes('administrative_area_level_2')) cidade = c.long_name;
+                if (c.types.includes('administrative_area_level_1')) estado = c.short_name;
+            });
+            if (!cidade) results[0].address_components.forEach(c => { if (c.types.includes('locality')) cidade = c.long_name; });
+            
+            if (cidade || estado) {
+                currentCity = cidade; currentState = estado;
+                dadosAtuais.cidade = cidade; dadosAtuais.estado = estado;
+                document.getElementById('cidadeEstado').innerHTML = `${cidade}${estado ? '/' + estado : ''}`;
+                cacheManager.set(cacheKey, { coordinates: currentCoordinates, cidade, estado });
+                gerarMensagem();
+            }
+        }
+    });
+}
+
+// ============================================
+// FUNÇÕES PRINCIPAIS
+// ============================================
+function extrairCidadeEstado(endereco) {
+    if (!endereco || endereco === "NÃO INFORMADO") return { cidade: '', estado: '' };
+    const cacheKey = `cidade_estado_${endereco.substring(0, 50)}`;
+    const cached = cacheManager.get(cacheKey);
+    if (cached) return cached;
+    
+    const padroes = [/(\w+(?:\s+\w+)*)\s*[-–]\s*([A-Z]{2})/i, /(\w+(?:\s+\w+)*)\s*,\s*([A-Z]{2})/i, /(\w+(?:\s+\w+)*)\s*\/\s*([A-Z]{2})/i, /(\w+(?:\s+\w+)*)\s+([A-Z]{2})\b/i];
+    for (const regex of padroes) {
+        const match = endereco.match(regex);
+        if (match) { const r = { cidade: match[1].trim(), estado: match[2].toUpperCase() }; cacheManager.set(cacheKey, r); return r; }
+    }
+    return { cidade: '', estado: '' };
+}
+
+function verificarClienteExistente(telefone, contrato, nome) {
+    const historico = JSON.parse(localStorage.getItem('historicoMensagens') || '[]');
+    let cliente = historico.find(item => item.telefone === telefone);
+    if (!cliente && contrato && contrato !== 'N/A') cliente = historico.find(item => item.contrato === contrato);
+    if (!cliente && nome && nome !== 'NÃO IDENTIFICADO') cliente = historico.find(item => item.nome === nome);
+    return cliente ? { encontrado: true, dataEnvio: cliente.dataHora, status: cliente.status, nome: cliente.nome, contrato: cliente.contrato, telefone: cliente.telefone } : { encontrado: false };
+}
+
+function verificarLembreteExistente(telefone, contrato, nome) {
+    let l = lembretes.find(item => item.telefone === telefone);
+    if (!l && contrato && contrato !== 'N/A') l = lembretes.find(item => item.contrato === contrato);
+    if (!l && nome && nome !== 'NÃO IDENTIFICADO') l = lembretes.find(item => item.nome === nome);
+    return l;
+}
+
+function getContratosAtivados() {
+    const historico = JSON.parse(localStorage.getItem('historicoMensagens') || '[]');
+    const contratosUnicos = [...new Set(historico.map(h => h.contrato).filter(c => c && c !== 'N/A'))];
+    return { total: historico.length, contratosUnicos: contratosUnicos.length, clientesUnicos: [...new Set(historico.map(h => h.telefone))].length, lista: historico.map(h => ({ nome: h.nome, contrato: h.contrato, telefone: h.telefone, data: h.dataHora, cidade: h.cidade || '', estado: h.estado || '' })) };
+}
+
+function geocodeAddress(address) { if (mapaCarregado && geocoder && address && address !== "NÃO INFORMADO") extrairCidadeEstadoViaGeocoding(address); }
+
+function editarEndereco() {
+    const novo = prompt("Digite o endereço correto:", currentAddress);
+    if (novo && novo.trim()) { 
+        currentAddress = novo.trim(); 
+        document.getElementById("detectedAddress").innerHTML = currentAddress; 
+        geocodeAddress(currentAddress);
+        const ext = extrairCidadeEstado(currentAddress);
+        if (ext.cidade) { currentCity = ext.cidade; currentState = ext.estado; dadosAtuais.cidade = ext.cidade; dadosAtuais.estado = ext.estado; document.getElementById('cidadeEstado').innerHTML = `${ext.cidade}${ext.estado ? '/' + ext.estado : ''}`; gerarMensagem(); }
+    }
+}
+
+function buscarLocalizacaoAtual() {
+    if (!mapaCarregado) { mostrarStatus('⚠️ Mapa não carregado', 'warning'); return; }
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((pos) => {
+            currentCoordinates = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            if (map) { map.setCenter(currentCoordinates); map.setZoom(17); }
+            if (currentMarker) currentMarker.setMap(null);
+            if (map) currentMarker = new google.maps.Marker({ position: currentCoordinates, map: map, title: "Minha Localização" });
+            if (geocoder) {
+                geocoder.geocode({ location: currentCoordinates }, (results, status) => {
+                    if (status === "OK" && results && results[0]) {
+                        currentAddress = results[0].formatted_address;
+                        document.getElementById("detectedAddress").innerHTML = currentAddress;
+                        document.getElementById("coordinates").innerHTML = `${currentCoordinates.lat.toFixed(6)}, ${currentCoordinates.lng.toFixed(6)}`;
+                        let cidade = '', estado = '';
+                        results[0].address_components.forEach(c => { if (c.types.includes('administrative_area_level_2') || c.types.includes('locality')) cidade = c.long_name; if (c.types.includes('administrative_area_level_1')) estado = c.short_name; });
+                        if (cidade) { currentCity = cidade; currentState = estado; dadosAtuais.cidade = cidade; dadosAtuais.estado = estado; document.getElementById('cidadeEstado').innerHTML = `${cidade}${estado ? '/' + estado : ''}`; gerarMensagem(); }
+                        mostrarStatus('✅ Localização encontrada!', 'success');
+                    }
+                });
+            }
+        }, (error) => { mostrarStatus('❌ Erro ao buscar localização', 'error'); });
+    } else { mostrarStatus('❌ Geolocalização não suportada', 'error'); }
+}
+
+async function capturarPrintMapa() {
+    if (!mapaCarregado) { mostrarStatus('⚠️ Mapa não carregado', 'warning'); return null; }
+    const mapContainer = document.getElementById('mapContainer');
+    if (!mapContainer) { mostrarStatus('❌ Container não encontrado', 'error'); return null; }
+    mostrarStatus('📸 Capturando...', 'info');
+    try {
+        await new Promise(r => setTimeout(r, 500));
+        const canvas = await html2canvas(mapContainer, { scale: 2, backgroundColor: '#1e1e1e', logging: false, useCORS: true });
+        ultimoPrintBase64 = canvas.toDataURL('image/png');
+        document.getElementById('printPreview').innerHTML = `<img src="${ultimoPrintBase64}" style="max-width:100%; border-radius:8px; border:1px solid #9b4dff;">`;
+        document.getElementById('printStatus').innerHTML = '✅ Print capturado!';
+        AudioFeedback.tocar('success');
+        mostrarStatus('✅ Print capturado!', 'success');
+        return ultimoPrintBase64;
+    } catch (error) {
+        document.getElementById('printStatus').innerHTML = '❌ Erro';
+        AudioFeedback.tocar('error');
+        mostrarStatus('❌ Erro ao capturar', 'error');
+        return null;
+    }
+}
+
+function copiarLocalizacao() {
+    if (!currentAddress || currentAddress === "NÃO INFORMADO") { mostrarStatus('❌ Sem localização', 'error'); return; }
+    const texto = `📍 ${currentAddress}\n🏙️ ${currentCity}${currentState ? '/' + currentState : ''}\n🗺️ https://www.google.com/maps/search/?api=1&query=${currentCoordinates.lat},${currentCoordinates.lng}`;
+    navigator.clipboard.writeText(texto).then(() => { AudioFeedback.tocar('success'); mostrarStatus('✅ Copiado!', 'success'); });
+}
+
+function gerarMensagem() {
+    const msg = TemplateMensagens.gerarMensagem(dadosAtuais);
+    document.getElementById("resultado").value = msg;
+    document.getElementById("contador").innerText = `Caracteres: ${msg.length}`;
+    dadosAtuais.mensagem = msg;
+    return msg;
+}
+
+async function enviarComPrint(numero, mensagem) {
+    if (document.getElementById('incluirPrintMapa').checked && !ultimoPrintBase64) await capturarPrintMapa();
+    const msgFinal = TemplateMensagens.gerarMensagem(dadosAtuais);
+    if (document.getElementById("copiarClipboard").checked) navigator.clipboard.writeText(msgFinal);
+    abrirWhatsAppApp(numero, msgFinal);
+    AudioFeedback.tocar('notification');
+    return true;
+}
+
+function abrirWhatsAppApp(telefone, mensagem) {
+    const limpo = telefone.replace(/\D/g, '');
+    let formatado = limpo;
+    if (formatado.length === 10) formatado = formatado.substring(0, 2) + '9' + formatado.substring(2);
+    const link = document.createElement('a');
+    link.href = `whatsapp://send?phone=55${formatado}&text=${encodeURIComponent(mensagem)}`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => document.body.removeChild(link), 100);
+    return true;
+}
+
+function dispararWhatsApp() {
+    if (!dadosAtuais.numero) { mostrarStatus('❌ Nenhum telefone!', 'error'); AudioFeedback.tocar('error'); return; }
+    const valid = validarTelefone(dadosAtuais.numero);
+    if (!valid.valido) { mostrarStatus(`❌ ${valid.motivo}`, 'error'); AudioFeedback.tocar('error'); return; }
+    
+    const existente = verificarClienteExistente(dadosAtuais.numero, dadosAtuais.contrato, dadosAtuais.nome);
+    if (existente.encontrado && !confirm(`⚠️ Cliente já contatado em ${existente.dataEnvio}!\nDeseja enviar novamente?`)) {
+        mostrarStatus('❌ Cancelado', 'warning'); return;
+    }
+    
+    if (!verificarAntiBlock()) return;
+    if (!dadosAtuais.mensagem) gerarMensagem();
+    enviarComPrint(dadosAtuais.numero, dadosAtuais.mensagem);
+    
+    ultimoDisparoTimestamp = Date.now();
+    localStorage.setItem('ultimoDisparoTimestamp', ultimoDisparoTimestamp.toString());
+    
+    const info = { dataHora: new Date().toLocaleString('pt-BR'), contrato: dadosAtuais.contrato, nome: dadosAtuais.nome, telefone: dadosAtuais.numero, cidade: dadosAtuais.cidade || currentCity, estado: dadosAtuais.estado || currentState, mensagem: dadosAtuais.mensagem, status: existente.encontrado ? '⚠️ Reenvio' : '✅ Enviado' };
+    salvarNoHistorico(info);
+    atualizarTimer();
+    adicionarConfirmacaoPendente(info);
+    setTimeout(() => cobrarConfirmacao(info), 2000);
+    esconderAvisoDuplicado();
+    atualizarStatusDuplicidade();
+}
+
+function enviarWhatsAppDireto() {
+    const numero = document.getElementById("whatsappNumero").value.trim();
+    if (!numero) { mostrarStatus('❌ Digite um número!', 'error'); return; }
+    const limpo = numero.replace(/\D/g, '');
+    const valid = validarTelefone(limpo);
+    if (!valid.valido) { mostrarStatus(`❌ ${valid.motivo}`, 'error'); return; }
+    
+    const msg = dadosAtuais.mensagem || document.getElementById("resultado").value;
+    if (!msg) { mostrarStatus('❌ Sem mensagem!', 'error'); return; }
+    if (!verificarAntiBlock()) return;
+    
+    enviarComPrint(limpo, msg);
+    ultimoDisparoTimestamp = Date.now();
+    localStorage.setItem('ultimoDisparoTimestamp', ultimoDisparoTimestamp.toString());
+    const info = { dataHora: new Date().toLocaleString('pt-BR'), contrato: dadosAtuais.contrato, nome: dadosAtuais.nome, telefone: limpo, cidade: dadosAtuais.cidade || currentCity, estado: dadosAtuais.estado || currentState, mensagem: msg, status: '✅ Enviado via Direto' };
+    salvarNoHistorico(info);
+    atualizarTimer();
+}
+
+function processarTextoCompleto() {
+    const texto = document.getElementById("fonte").value;
+    if (!texto || texto.length < 5) return;
+    
+    const telefones = [];
+    const regexTel = /\((\d{2,3})\)\s*(\d)?\s*(\d{4,5})-(\d{4})/g;
+    let match;
+    while ((match = regexTel.exec(texto)) !== null) {
+        let numero = (match[1] + (match[2] || '') + match[3] + match[4]).replace(/\D/g, '');
+        const valid = validarTelefone(numero);
+        if (valid.valido) {
+            if (numero.length === 10) numero = numero.substring(0, 2) + '9' + numero.substring(2);
+            if (!telefones.includes(numero)) telefones.push(numero);
+        }
+    }
+    
+    const nome = texto.match(/Nome:\s*([^\n]+)/i)?.[1]?.trim() || "NÃO IDENTIFICADO";
+    const contrato = texto.match(/Contrato:\s*([^\n]+)/i)?.[1]?.trim() || "N/A";
+    const endereco = texto.match(/Endere[çc]o:\s*([^]+?)(?=Bairro:|Cep:|Cidade|$)/i)?.[1]?.replace(/\s+/g, ' ').trim() || "NÃO INFORMADO";
+    const bairro = texto.match(/Bairro:\s*([^\n]+)/i)?.[1]?.trim() || "NÃO INFORMADO";
+    const cep = texto.match(/CEP:\s*([^\n]+)/i)?.[1]?.trim() || "N/A";
+    const cidadeMatch = texto.match(/Cidade:\s*([^\n]+)/i)?.[1]?.trim() || '';
+    const estadoMatch = texto.match(/Estado:\s*([^\n]+)/i)?.[1]?.trim() || '';
+    
+    let cidadeExtraida = cidadeMatch;
+    let estadoExtraido = estadoMatch;
+    if (!cidadeExtraida) { const ext = extrairCidadeEstado(endereco); cidadeExtraida = ext.cidade; estadoExtraido = ext.estado; }
+    
+    dadosAtuais = { ...dadosAtuais, nome, contrato, endereco, bairro, cep, cidade: cidadeExtraida, estado: estadoExtraido, telefonesDisponiveis: telefones };
+    
+    if (endereco !== "NÃO INFORMADO") { currentAddress = endereco; document.getElementById("detectedAddress").innerHTML = currentAddress; geocodeAddress(currentAddress); }
+    if (cidadeExtraida) { currentCity = cidadeExtraida; currentState = estadoExtraido; document.getElementById('cidadeEstado').innerHTML = `${cidadeExtraida}${estadoExtraido ? '/' + estadoExtraido : ''}`; }
+    
+    const container = document.getElementById('telefones-container');
+    container.innerHTML = '';
+    if (telefones.length === 0) { container.innerHTML = '<div style="color:#999;text-align:center;padding:20px;width:100%;">Nenhum telefone válido detectado</div>'; }
+    else {
+        telefones.forEach((tel, idx) => {
+            const div = document.createElement('div');
+            div.className = 'telefone-option';
+            div.setAttribute('data-telefone', tel);
+            div.onclick = () => selecionarTelefone(tel);
+            div.innerHTML = `<span class="badge">${idx + 1}</span> ${formatarTelefone(tel)}`;
+            container.appendChild(div);
+        });
+        selecionarTelefone(telefones[0]);
+    }
+    
+    gerarMensagem();
+    atualizarAnalytics();
+    atualizarStatusDuplicidade();
+}
+
+function selecionarTelefone(telefone) {
+    document.querySelectorAll('.telefone-option').forEach(o => o.classList.remove('selected'));
+    const sel = Array.from(document.querySelectorAll('.telefone-option')).find(o => o.getAttribute('data-telefone') === telefone);
+    if (sel) sel.classList.add('selected');
+    dadosAtuais.numero = telefone;
+    document.getElementById('telefone').value = formatarTelefone(telefone);
+    AudioFeedback.tocar('click');
+    gerarMensagem();
+    atualizarStatusDuplicidade();
+}
+
+function limparTudo() {
+    ['fonte','telefone','resultado','whatsappNumero'].forEach(id => document.getElementById(id).value = '');
+    ['detectedAddress','cidadeEstado','coordinates'].forEach(id => document.getElementById(id).innerHTML = id === 'detectedAddress' ? 'Aguardando texto...' : '-');
+    document.getElementById('telefones-container').innerHTML = '<div style="color:#999;text-align:center;padding:20px;width:100%;">Aguardando dados...</div>';
+    dadosAtuais = { numero: '', contrato: 'N/A', nome: 'NÃO IDENTIFICADO', endereco: 'NÃO INFORMADO', bairro: 'NÃO INFORMADO', cidade: '', estado: '', cep: 'N/A', mensagem: '', telefonesDisponiveis: [] };
+    currentAddress = "NÃO INFORMADO"; currentCity = ""; currentState = "";
+    if (currentMarker) currentMarker.setMap(null);
+    ultimoPrintBase64 = null; clienteJaContatado = false; infoClienteExistente = null;
+    gerarMensagem(); atualizarAnalytics(); atualizarStatusDuplicidade(); esconderAvisoDuplicado();
+    AudioFeedback.tocar('click');
+    mostrarStatus('✅ Limpo!', 'success');
+}
+
+// ============================================
+// HISTÓRICO E CONFIRMAÇÕES
+// ============================================
+function salvarNoHistorico(info) {
+    const hist = JSON.parse(localStorage.getItem('historicoMensagens') || '[]');
+    hist.push(info);
+    localStorage.setItem('historicoMensagens', JSON.stringify(hist));
+    atualizarRelatorioConfirmacoes(); atualizarAnalytics();
+    adicionarMensagemChat(`✨ Mensagem enviada para ${info.nome}. Total: ${hist.length}`);
+}
+
+function adicionarConfirmacaoPendente(envio) {
+    confirmacoesPendentes.push({ id: Date.now(), dataEnvio: envio.dataHora, contrato: envio.contrato, nome: envio.nome, telefone: envio.telefone, status: 'pendente' });
+    salvarConfirmacoes();
+}
+
+function registrarConfirmacao(confirmado) {
+    const pendente = confirmacoesPendentes[confirmacoesPendentes.length - 1];
+    if (pendente) {
+        pendente.status = confirmado ? 'confirmado' : 'nao_respondido';
+        historicoConfirmacoes.push({ ...pendente, dataConfirmacao: new Date().toLocaleString('pt-BR'), resposta: confirmado ? '✅ Cliente confirmou' : '❌ Cliente não respondeu' });
+        confirmacoesPendentes = confirmacoesPendentes.filter(p => p.id !== pendente.id);
+        salvarConfirmacoes();
+        AudioFeedback.tocar(confirmado ? 'success' : 'error');
+        mostrarAssistenteMensagem(confirmado ? '✅ Confirmado!' : '⚠️ Não respondeu.');
+        setTimeout(() => esconderAssistente(), 2000);
+    }
+    atualizarRelatorioConfirmacoes(); atualizarAnalytics();
+}
+
+function adiarConfirmacao() { mostrarAssistenteMensagem('⏰ Depois eu pergunto!'); setTimeout(() => esconderAssistente(), 1500); }
+
+function cobrarConfirmacao(info) {
+    document.getElementById('confirmationQuestion').innerHTML = `<strong>📱 ${info.nome}</strong><br>${formatarTelefone(info.telefone)}<br><br>⚠️ O cliente respondeu?`;
+    document.getElementById('assistenteConfirmationBox').style.display = 'block';
+    document.getElementById('assistenteMessage').innerHTML = '<strong>✨ Assistente</strong><br>Preciso da sua ajuda!';
+    document.getElementById('assistenteContainer').style.display = 'block';
+}
+
+function mostrarAssistenteMensagem(msg) {
+    document.getElementById('assistenteMessage').innerHTML = `<strong>✨ Assistente:</strong><br>${msg}`;
+    document.getElementById('assistenteConfirmationBox').style.display = 'none';
+    document.getElementById('assistenteContainer').style.display = 'block';
+    setTimeout(() => esconderAssistente(), 2500);
+}
+
+function esconderAssistente() { document.getElementById('assistenteContainer').style.display = 'none'; }
+function mostrarDicaAssistente() { mostrarAssistenteMensagem('💡 Use Ctrl+Enter para enviar!\nTemplates no topo da página\nBackup em Relatório'); }
+function salvarConfirmacoes() { localStorage.setItem('confirmacoesPendentes', JSON.stringify(confirmacoesPendentes)); localStorage.setItem('historicoConfirmacoes', JSON.stringify(historicoConfirmacoes)); }
+
+function atualizarRelatorioConfirmacoes() {
+    const hist = JSON.parse(localStorage.getItem('historicoMensagens') || '[]');
+    const tbody = document.getElementById('relatorio-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    hist.slice().reverse().slice(0, 30).forEach(item => {
+        const conf = historicoConfirmacoes.find(c => c.telefone === item.telefone && c.dataEnvio === item.dataHora);
+        const statusConf = conf ? (conf.resposta.includes('confirmou') ? '<span style="color:#28a745;">✅ Confirmado</span>' : '<span style="color:#dc3545;">❌ Não respondeu</span>') : '<span style="color:#ffc107;">⏳ Aguardando</span>';
+        tbody.innerHTML += `<tr><td>${item.dataHora}</td><td>${item.contrato}</td><td>${item.nome}</td><td>${formatarTelefone(item.telefone)}</td><td>${item.cidade ? item.cidade + (item.estado ? '/' + item.estado : '') : '-'}</td><td>${item.status}</td><td>${statusConf}</td></tr>`;
+    });
+}
+
+function mostrarStatus(msg, tipo) {
+    const s = document.getElementById('status');
+    s.innerText = msg; s.className = `status ${tipo}`;
+    setTimeout(() => { s.innerText = ''; s.className = 'status'; }, 3000);
+}
+
+function mostrarAvisoDuplicado(msg) { document.getElementById('avisoDuplicadoTexto').innerHTML = msg; document.getElementById('avisoDuplicado').classList.add('show'); }
+function esconderAvisoDuplicado() { document.getElementById('avisoDuplicado').classList.remove('show'); }
+
+function atualizarStatusDuplicidade() {
+    const sd = document.getElementById('statusDuplicidade');
+    const contratos = getContratosAtivados();
+    if (dadosAtuais.numero) {
+        const existente = verificarClienteExistente(dadosAtuais.numero, dadosAtuais.contrato, dadosAtuais.nome);
+        if (existente.encontrado) {
+            sd.innerHTML = `⚠️ JÁ CONTATADO<br>📅 ${existente.dataEnvio}`; sd.style.color = '#ffc107';
+            clienteJaContatado = true; infoClienteExistente = existente;
+            mostrarAvisoDuplicado(`Cliente já contatado em ${existente.dataEnvio}!`);
+        } else {
+            sd.innerHTML = `✅ Não contatado<br>📊 ${contratos.total} contratos`; sd.style.color = '#28a745';
+            clienteJaContatado = false; esconderAvisoDuplicado();
+        }
+    } else { sd.innerHTML = `📊 ${contratos.total} disparos | ${contratos.contratosUnicos} contratos`; sd.style.color = '#e0e0e0'; }
+}
+
+// ============================================
+// ANTI-BLOCK
+// ============================================
+function atualizarTimer() {
+    const agora = Date.now(), decorrido = (agora - ultimoDisparoTimestamp) / 1000;
+    const intervalo = parseInt(document.getElementById('timerIntervalo').value);
+    const btn = document.getElementById('btnDisparo'), timerD = document.getElementById('timerDisplay');
+    const prog = document.getElementById('progressFill'), ativo = document.getElementById('ativarAntiBlock').checked;
+    if (!ativo) { timerD.textContent = '--:--'; btn.disabled = false; return; }
+    if (ultimoDisparoTimestamp === 0 || decorrido >= intervalo) { timerD.textContent = '00:00'; btn.disabled = false; prog.style.width = '100%'; }
+    else { const rest = Math.ceil(intervalo - decorrido); timerD.textContent = `${Math.floor(rest/60).toString().padStart(2,'0')}:${(rest%60).toString().padStart(2,'0')}`; btn.disabled = true; prog.style.width = `${(decorrido/intervalo)*100}%`; }
+}
+
+function verificarAntiBlock() {
+    if (!document.getElementById('ativarAntiBlock').checked) return true;
+    const decorrido = (Date.now() - ultimoDisparoTimestamp) / 1000;
+    const intervalo = parseInt(document.getElementById('timerIntervalo').value);
+    if (ultimoDisparoTimestamp === 0 || decorrido >= intervalo) return true;
+    mostrarStatus(`⏳ Aguarde ${Math.ceil(intervalo - decorrido)}s`, 'warning');
+    AudioFeedback.tocar('error');
+    return false;
+}
+
+function configurarTimer() { atualizarTimer(); }
+
+// ============================================
+// ANALYTICS
+// ============================================
+function calcularProbabilidadeConfirmacao() {
+    const total = JSON.parse(localStorage.getItem('historicoMensagens') || '[]').length;
+    const confirmados = historicoConfirmacoes.filter(c => c.resposta.includes('confirmou')).length;
+    let taxa = total ? (confirmados / total) * 100 : 50;
+    if (currentAddress !== "NÃO INFORMADO") taxa += 15;
+    if (clienteJaContatado) taxa += 10;
+    return Math.min(98, Math.max(5, Math.round(taxa)));
+}
+
+function calcularTaxaResposta() {
+    const total = JSON.parse(localStorage.getItem('historicoMensagens') || '[]').length;
+    return total ? Math.round((historicoConfirmacoes.length / total) * 100) : 0;
+}
+
+function atualizarAnalytics() {
+    const total = JSON.parse(localStorage.getItem('historicoMensagens') || '[]').length;
+    document.getElementById('predictionRate').innerHTML = `${calcularProbabilidadeConfirmacao()}%`;
+    document.getElementById('bestHour').innerHTML = "10:00 - 11:00";
+    document.getElementById('totalDisparosGeral').innerHTML = total;
+    document.getElementById('taxaConfirmacao').innerHTML = `${total ? Math.round((historicoConfirmacoes.filter(c => c.resposta.includes('confirmou')).length / total) * 100) : 0}%`;
+    document.getElementById('responseRate').innerHTML = `${calcularTaxaResposta()}%`;
+    const contratos = getContratosAtivados();
+    document.getElementById('contratosAtivados').innerHTML = `📊 ${contratos.total} total | 📋 ${contratos.contratosUnicos} únicos | 👥 ${contratos.clientesUnicos} clientes`;
+    document.getElementById('instantAnalysis').innerHTML = dadosAtuais.nome !== 'NÃO IDENTIFICADO' ? `✅ ${dadosAtuais.nome}<br>📄 ${dadosAtuais.contrato}<br>📍 ${dadosAtuais.endereco.substring(0, 40)}...` : `📊 ${contratos.total} disparos<br>📋 ${contratos.contratosUnicos} contratos`;
+}
+
+function exportarRelatorio() {
+    const hist = JSON.parse(localStorage.getItem('historicoMensagens') || '[]');
+    if (!hist.length) { mostrarStatus('Sem registros!', 'error'); return; }
+    let csv = 'Data/Hora;Contrato;Nome;Telefone;Cidade;Estado;Status;Confirmação\n';
+    hist.forEach(item => { const conf = historicoConfirmacoes.find(c => c.telefone === item.telefone); csv += `${item.dataHora};${item.contrato};${item.nome};${item.telefone};${item.cidade||''};${item.estado||''};${item.status};${conf ? (conf.resposta.includes('confirmou') ? 'Confirmado' : 'Não respondeu') : 'Aguardando'}\n`; });
+    const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `disparos_${new Date().toLocaleDateString().replace(/\//g,'-')}.csv`; a.click();
+    mostrarStatus('✅ Exportado!', 'success');
+}
+
+function limparHistorico() {
+    if (confirm('Limpar TODO o histórico?')) {
+        ['historicoMensagens','confirmacoesPendentes','historicoConfirmacoes'].forEach(k => localStorage.setItem(k, JSON.stringify([])));
+        confirmacoesPendentes = []; historicoConfirmacoes = [];
+        salvarConfirmacoes(); atualizarRelatorioConfirmacoes(); atualizarAnalytics(); atualizarStatusDuplicidade();
+        cacheManager.clearAll();
+        mostrarStatus('✅ Histórico limpo!', 'success');
+    }
+}
+
+function importarBackupArquivo(input) {
+    const arquivo = input.files[0];
+    if (!arquivo) return;
+    gerenciadorBackup.importarCompleto(arquivo).then(meta => {
+        mostrarStatus(`✅ ${meta.totalMensagens} mensagens restauradas!`, 'success');
+        Toast.mostrar(`✅ ${meta.totalMensagens} restauradas!`, 'success');
+        atualizarRelatorioConfirmacoes(); atualizarAnalytics(); atualizarListaLembretes(); atualizarStatusDuplicidade();
+    }).catch(err => { mostrarStatus(`❌ ${err.message}`, 'error'); });
+    input.value = '';
+}
+
+function showTab(tabId, btn) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    if (btn) btn.classList.add('active');
+    if (tabId === 'relatorio') atualizarRelatorioConfirmacoes();
+    if (tabId === 'analytics') atualizarAnalytics();
+    if (tabId === 'lembretes') atualizarListaLembretes();
+}
+
+// ============================================
+// LEMBRETES
+// ============================================
+function adicionarAoLembrete() {
+    if (!dadosAtuais.nome || dadosAtuais.nome === 'NÃO IDENTIFICADO') { mostrarStatus('⚠️ Sem dados!', 'warning'); return; }
+    if (verificarLembreteExistente(dadosAtuais.numero, dadosAtuais.contrato, dadosAtuais.nome)) { mostrarStatus('⚠️ Já está nos lembretes!', 'warning'); return; }
+    lembretes.push({ id: Date.now(), nome: dadosAtuais.nome, telefone: dadosAtuais.numero, contrato: dadosAtuais.contrato, endereco: dadosAtuais.endereco, cidade: dadosAtuais.cidade || currentCity, estado: dadosAtuais.estado || currentState, mensagem: dadosAtuais.mensagem, dataAdicionado: new Date().toLocaleString('pt-BR'), selecionado: false });
+    localStorage.setItem('lembretes', JSON.stringify(lembretes));
+    atualizarListaLembretes();
+    AudioFeedback.tocar('success');
+    mostrarStatus('✅ Adicionado!', 'success');
+}
+
+function toggleLembrete() { if (document.getElementById('marcarLembrete').checked) adicionarAoLembrete(); }
+
+function atualizarListaLembretes() {
+    const container = document.getElementById('lembretesList');
+    if (!container) return;
+    lembretes = JSON.parse(localStorage.getItem('lembretes') || '[]');
+    if (!lembretes.length) { container.innerHTML = '<div style="color:#999;text-align:center;padding:40px;">Nenhum lembrete</div>'; return; }
+    container.innerHTML = '';
+    lembretes.forEach(lem => {
+        const div = document.createElement('div');
+        div.className = 'lembrete-item';
+        div.innerHTML = `<input type="checkbox" class="lembrete-checkbox" ${lem.selecionado ? 'checked' : ''} onchange="toggleSelecionarLembrete(${lem.id})"><div class="lembrete-info"><strong>${lem.nome}</strong><br>📱 ${formatarTelefone(lem.telefone)}<br>📄 ${lem.contrato}${lem.cidade ? ` | ${lem.cidade}` : ''}</div><button onclick="removerLembrete(${lem.id})" style="background:#dc3545;padding:5px 10px;">🗑️</button>`;
+        container.appendChild(div);
+    });
+}
+
+function limparLembretesDuplicados() {
+    const hist = JSON.parse(localStorage.getItem('historicoMensagens') || '[]');
+    const tels = new Set(hist.map(h => h.telefone));
+    const antes = lembretes.length;
+    lembretes = lembretes.filter(l => !tels.has(l.telefone));
+    localStorage.setItem('lembretes', JSON.stringify(lembretes));
+    atualizarListaLembretes();
+    mostrarStatus(`✅ ${antes - lembretes.length} removidos!`, 'success');
+}
+
+function toggleSelecionarLembrete(id) { const l = lembretes.find(x => x.id === id); if (l) { l.selecionado = !l.selecionado; localStorage.setItem('lembretes', JSON.stringify(lembretes)); } }
+function selecionarTodosLembretes() { lembretes.forEach(l => l.selecionado = true); localStorage.setItem('lembretes', JSON.stringify(lembretes)); atualizarListaLembretes(); }
+function deselecionarTodosLembretes() { lembretes.forEach(l => l.selecionado = false); localStorage.setItem('lembretes', JSON.stringify(lembretes)); atualizarListaLembretes(); }
+function removerLembrete(id) { lembretes = lembretes.filter(l => l.id !== id); localStorage.setItem('lembretes', JSON.stringify(lembretes)); atualizarListaLembretes(); }
+
+async function dispararLoteSelecionados() {
+    const sel = lembretes.filter(l => l.selecionado);
+    if (!sel.length) { mostrarStatus('⚠️ Selecione lembretes!', 'warning'); return; }
+    if (!verificarAntiBlock()) return;
+    mostrarStatus(`🚀 ${sel.length} cliente(s)...`, 'info');
+    for (const cliente of sel) {
+        dadosAtuais = { ...dadosAtuais, nome: cliente.nome, numero: cliente.telefone, contrato: cliente.contrato, endereco: cliente.endereco, cidade: cliente.cidade, estado: cliente.estado };
+        if (!dadosAtuais.mensagem) gerarMensagem();
+        await enviarComPrint(cliente.telefone, dadosAtuais.mensagem);
+        salvarNoHistorico({ dataHora: new Date().toLocaleString('pt-BR'), contrato: cliente.contrato, nome: cliente.nome, telefone: cliente.telefone, cidade: cliente.cidade, estado: cliente.estado, mensagem: dadosAtuais.mensagem, status: '✅ Lote' });
+        await new Promise(r => setTimeout(r, 2000));
+    }
+    ultimoDisparoTimestamp = Date.now();
+    localStorage.setItem('ultimoDisparoTimestamp', ultimoDisparoTimestamp.toString());
+    atualizarTimer(); atualizarListaLembretes();
+    mostrarStatus(`✅ Lote finalizado!`, 'success');
+}
+
+// ============================================
+// CHAT
+// ============================================
+function adicionarMensagemChat(texto, isUser = false) {
+    const chat = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = 'chat-message';
+    div.innerHTML = isUser ? `<div class="message-user"><div class="avatar">👤</div><div class="text">${texto.replace(/\n/g,'<br>')}</div></div>` : `<div class="message-assistant"><div class="avatar">✨</div><div class="text">${texto.replace(/\n/g,'<br>')}</div></div>`;
+    chat.appendChild(div);
+    div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+
+function processarComandoChat(cmd) {
+    const c = getContratosAtivados();
+    if (cmd.includes('status')) return `📊 STATUS\n━━━━━━━━━\n📋 Contratos: ${c.total}\n📄 Únicos: ${c.contratosUnicos}\n👥 Clientes: ${c.clientesUnicos}\n📅 Lembretes: ${lembretes.length}\n✅ Taxa: ${calcularTaxaResposta()}%`;
+    if (cmd.includes('lembrete')) return `📅 ${lembretes.length} lembretes ativos`;
+    if (cmd.includes('contrato')) return `📋 ${c.total} contratos ativados\n${c.lista.slice(-3).map(x => `• ${x.nome} - ${x.contrato}`).join('\n')}`;
+    return '✨ Comandos: status, lembretes, contratos';
+}
+
+function enviarMensagemChat() {
+    const input = document.getElementById('chatInput');
+    const p = input.value.trim();
+    if (!p) return;
+    adicionarMensagemChat(p, true);
+    input.value = '';
+    setTimeout(() => adicionarMensagemChat(processarComandoChat(p)), 300);
+}
+
+function quickAction(acao) { adicionarMensagemChat(`✨ ${processarComandoChat(acao)}`); }
+
+// ============================================
+// ATALHOS DE TECLADO
+// ============================================
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); dispararWhatsApp(); }
+        if (e.ctrlKey && e.key === 'l') { e.preventDefault(); limparTudo(); }
+        if (e.ctrlKey && e.key === 's') { e.preventDefault(); quickAction('status'); }
+        if (e.ctrlKey && e.key === 'b') { e.preventDefault(); gerenciadorBackup.exportarCompleto(); }
+        const tabs = {'1':'gerador','2':'relatorio','3':'antiblocks','4':'lembretes','5':'analytics'};
+        if (e.ctrlKey && tabs[e.key]) { e.preventDefault(); showTab(tabs[e.key]); }
+        if (e.key === 'Escape') esconderAssistente();
+    });
+}
+
+// ============================================
+// TEMPLATE BUTTONS
+// ============================================
+function setupTemplateButtons() {
+    document.querySelectorAll('.template-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.template-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            TemplateMensagens.selecionar(this.dataset.template);
+        });
+    });
+}
+
+// ============================================
+// INICIALIZAÇÃO FINAL
+// ============================================
+window.onload = function() {
+    console.log('🚀 Agente V5 iniciando...');
+    AudioFeedback.init();
+    Toast.init();
+    
+    ['historicoMensagens','confirmacoesPendentes','historicoConfirmacoes','lembretes'].forEach(k => {
+        if (!localStorage.getItem(k)) localStorage.setItem(k, JSON.stringify([]));
+    });
+    
+    confirmacoesPendentes = JSON.parse(localStorage.getItem('confirmacoesPendentes') || '[]');
+    historicoConfirmacoes = JSON.parse(localStorage.getItem('historicoConfirmacoes') || '[]');
+    lembretes = JSON.parse(localStorage.getItem('lembretes') || '[]');
+    
+    setupKeyboardShortcuts();
+    setupTemplateButtons();
+    
+    atualizarTimer();
+    timerInterval = setInterval(atualizarTimer, 1000);
+    
+    atualizarAnalytics();
+    atualizarRelatorioConfirmacoes();
+    atualizarListaLembretes();
+    atualizarStatusDuplicidade();
+    
+    gerenciadorBackup.agendarBackupAutomatico();
+    gerarMensagem();
+    
+    setTimeout(() => {
+        if (!mapaCarregado) {
+            console.warn('⚠️ Mapa ainda não carregou');
+            document.getElementById('mapStatus').textContent = '⏳ Aguardando mapa...';
+        }
+    }, 5000);
+    
+    const c = getContratosAtivados();
+    mostrarStatus(`🤖 Agente V5 pronto | 📋 ${c.total} contratos`, 'info');
+    adicionarMensagemChat(`✨ Assistente V5 pronto! 🚀\n🗺️ Mapa: ${mapaCarregado ? '✅' : '⏳'}\n📋 ${c.total} contratos na base`);
+};
+
+console.log('📋 Agente V5 - Sistema pronto para GitHub Pages');
+</script>
+</body>
+</html>
