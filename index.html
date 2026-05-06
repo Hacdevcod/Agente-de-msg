@@ -3,303 +3,298 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agente de Mensagem V7.0 - WhatsApp + Mapa Integrados</title>
+    <title>Agente V8.0 - Multi-View WhatsApp + Mapa Integrado</title>
     
-    <!-- Leaflet CSS + JS (Mapa gratuito, sem API Key) -->
+    <!-- Leaflet CSS + JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <style>
         :root {
-            --bg-dark: #0a1014;
-            --bg-panel: #111b21;
-            --bg-card: #1f2c33;
+            --bg-primary: #0a1014;
+            --bg-secondary: #111b21;
+            --bg-tertiary: #1f2c33;
             --bg-input: #2a3942;
             --text-primary: #e9edef;
             --text-secondary: #8696a0;
-            --accent-green: #00a884;
-            --whatsapp-green: #25D366;
-            --whatsapp-dark: #075e54;
-            --border-color: #313d45;
+            --wa-green: #25D366;
+            --wa-dark: #075e54;
+            --wa-teal: #128C7E;
+            --border: #313d45;
+            --accent: #00a884;
             --danger: #dc3545;
             --warning: #ffc107;
+            --info: #17a2b8;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
             background: #000;
             color: var(--text-primary);
             height: 100vh;
             overflow: hidden;
+        }
+
+        /* BARRA DE ABAS SUPERIOR */
+        .tab-bar {
+            background: #1a1a2e;
             display: flex;
+            align-items: center;
+            padding: 0 10px;
+            height: 40px;
+            border-bottom: 2px solid #333;
+            gap: 2px;
+            user-select: none;
+        }
+
+        .tab-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #16213e;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-size: 13px;
+            color: #aaa;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .tab-item:hover {
+            background: #1a1a3e;
+            color: white;
+        }
+
+        .tab-item.active {
+            background: var(--bg-secondary);
+            color: white;
+            border-color: var(--wa-green);
+            border-bottom-color: var(--bg-secondary);
+        }
+
+        .tab-item .tab-icon {
+            font-size: 16px;
+        }
+
+        .tab-item .tab-close {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            color: #666;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 4px;
+        }
+
+        .tab-item .tab-close:hover {
+            background: #333;
+            color: white;
+        }
+
+        .tab-add {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1px dashed #555;
+            background: transparent;
+            color: #888;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 5px;
+            transition: all 0.2s;
+        }
+
+        .tab-add:hover {
+            border-color: var(--wa-green);
+            color: var(--wa-green);
+            background: rgba(37, 211, 102, 0.1);
+        }
+
+        .tab-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 5px;
+        }
+
+        .tab-action-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background: transparent;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .tab-action-btn:hover {
+            background: #333;
+            color: white;
+        }
+
+        /* ÁREA DE CONTEÚDO DAS ABAS */
+        .tab-content-area {
+            height: calc(100vh - 40px);
+            position: relative;
+        }
+
+        .tab-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: none;
             flex-direction: column;
         }
 
-        /* TOP BAR */
-        .topbar {
-            background: linear-gradient(135deg, var(--whatsapp-dark), #0d5c4a);
-            padding: 8px 20px;
+        .tab-panel.active {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 2px solid rgba(37, 211, 102, 0.3);
-            z-index: 100;
         }
 
-        .topbar-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .topbar-logo {
-            font-size: 28px;
-        }
-
-        .topbar h1 {
-            font-size: 18px;
-            color: white;
-            letter-spacing: 0.5px;
-        }
-
-        .topbar .badge {
-            background: var(--whatsapp-green);
-            color: white;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: bold;
-        }
-
-        .topbar-right {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .connection-status {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            background: rgba(0,0,0,0.3);
-            padding: 6px 14px;
-            border-radius: 20px;
-        }
-
-        .status-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #ffc107;
-        }
-
-        .status-indicator.online {
-            background: #28a745;
-            box-shadow: 0 0 8px rgba(40, 167, 69, 0.5);
-        }
-
-        /* MAIN LAYOUT - 3 COLUNAS */
-        .main-container {
-            flex: 1;
+        /* PAINEL PRINCIPAL (DASHBOARD) */
+        .dashboard {
             display: grid;
-            grid-template-columns: 380px 1fr 350px;
+            grid-template-columns: 350px 1fr 300px;
+            grid-template-rows: 1fr 1fr;
             gap: 8px;
             padding: 8px;
-            overflow: hidden;
             background: #050505;
         }
 
-        /* COLUNA ESQUERDA - CONTROLES */
-        .left-column {
-            background: var(--bg-panel);
+        @media (max-width: 1200px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr auto;
+            }
+        }
+
+        .panel-card {
+            background: var(--bg-secondary);
             border-radius: 10px;
+            border: 1px solid var(--border);
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            border: 1px solid var(--border-color);
         }
 
-        .column-header {
-            background: var(--bg-card);
+        .panel-header {
+            background: var(--bg-tertiary);
             padding: 10px 15px;
             font-weight: 700;
-            font-size: 13px;
+            font-size: 12px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
-        .column-body {
+        .panel-body {
             flex: 1;
             overflow-y: auto;
             padding: 10px;
         }
 
-        .column-body::-webkit-scrollbar {
+        .panel-body::-webkit-scrollbar {
             width: 4px;
         }
 
-        .column-body::-webkit-scrollbar-thumb {
-            background: var(--border-color);
+        .panel-body::-webkit-scrollbar-thumb {
+            background: var(--border);
             border-radius: 2px;
         }
 
-        /* CARDS */
-        .mini-card {
-            background: var(--bg-card);
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 8px;
-            border: 1px solid transparent;
-            transition: border-color 0.3s;
+        /* DADOS DO CLIENTE */
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 11px;
         }
 
-        .mini-card:hover {
-            border-color: var(--border-color);
-        }
-
-        .mini-card label {
-            display: block;
-            font-size: 10px;
+        .data-row .key {
             color: var(--text-secondary);
-            margin-bottom: 4px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-size: 10px;
         }
 
+        .data-row .val {
+            color: var(--text-primary);
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .highlight {
+            color: var(--wa-green) !important;
+            font-size: 14px !important;
+        }
+
+        /* INPUTS */
         textarea, input[type="text"] {
             width: 100%;
             padding: 8px 10px;
             background: var(--bg-input);
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border);
             color: var(--text-primary);
             border-radius: 6px;
             font-size: 12px;
             font-family: inherit;
-            transition: border-color 0.3s;
-        }
-
-        textarea {
-            min-height: 70px;
-            resize: vertical;
         }
 
         textarea:focus, input:focus {
             outline: none;
-            border-color: var(--accent-green);
+            border-color: var(--wa-green);
         }
 
-        /* TELEFONE CHIPS */
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
         .phone-chips {
             display: flex;
             flex-wrap: wrap;
-            gap: 5px;
-            min-height: 30px;
+            gap: 4px;
         }
 
         .phone-chip {
-            padding: 5px 12px;
+            padding: 5px 10px;
             background: var(--bg-input);
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border);
             border-radius: 15px;
             cursor: pointer;
             font-size: 11px;
             transition: all 0.2s;
         }
 
-        .phone-chip:hover {
-            background: var(--accent-green);
-            border-color: var(--accent-green);
+        .phone-chip:hover, .phone-chip.selected {
+            background: var(--wa-green);
             color: white;
-        }
-
-        .phone-chip.selected {
-            background: var(--accent-green);
-            border-color: #1e7e34;
-            color: white;
-            font-weight: bold;
-        }
-
-        /* BOTÕES */
-        .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 12px;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .btn:hover {
-            filter: brightness(1.2);
-            transform: translateY(-1px);
-        }
-
-        .btn-wa {
-            background: var(--whatsapp-green);
-            color: white;
-            width: 100%;
-            justify-content: center;
-            padding: 10px;
-            font-size: 13px;
-        }
-
-        .btn-send {
-            background: var(--accent-green);
-            color: white;
-            flex: 1;
-            justify-content: center;
-        }
-
-        .btn-copy {
-            background: var(--bg-input);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-            flex: 1;
-            justify-content: center;
-        }
-
-        .btn-clear {
-            background: transparent;
-            color: var(--danger);
-            border: 1px solid var(--danger);
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 6px;
-            margin-top: 8px;
-        }
-
-        /* COLUNA CENTRAL - MAPA + WHATSAPP SIMULADO */
-        .center-column {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+            border-color: var(--wa-green);
         }
 
         /* MAPA */
-        .map-panel {
-            background: var(--bg-panel);
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
-            height: 45%;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .map-container {
+        .map-wrapper {
             flex: 1;
             position: relative;
         }
@@ -307,10 +302,9 @@
         #map {
             width: 100%;
             height: 100%;
-            z-index: 1;
         }
 
-        .map-overlay {
+        .map-controls {
             position: absolute;
             bottom: 10px;
             left: 10px;
@@ -318,6 +312,7 @@
             z-index: 1000;
             display: flex;
             gap: 5px;
+            flex-wrap: wrap;
         }
 
         .map-btn {
@@ -327,15 +322,16 @@
             border: 1px solid rgba(255,255,255,0.3);
             border-radius: 20px;
             cursor: pointer;
-            font-size: 11px;
+            font-size: 10px;
             backdrop-filter: blur(10px);
+            transition: all 0.2s;
         }
 
         .map-btn:hover {
             background: rgba(37, 211, 102, 0.8);
         }
 
-        .map-address-bar {
+        .map-address {
             position: absolute;
             top: 10px;
             left: 10px;
@@ -350,341 +346,431 @@
             border: 1px solid rgba(255,255,255,0.2);
         }
 
-        /* WHATSAPP SIMULATOR */
-        .whatsapp-panel {
-            background: var(--bg-panel);
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
-            flex: 1;
+        /* WHATSAPP VIEW (ABA INTERNA) */
+        .whatsapp-container {
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            height: 100%;
+            background: #0a0f14;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23111b21' fill-opacity='0.3'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
         }
 
-        .whatsapp-chat-header {
-            background: var(--whatsapp-dark);
-            padding: 10px 15px;
+        .wa-top-bar {
+            background: var(--wa-dark);
+            padding: 12px 15px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
         .wa-avatar {
-            width: 35px;
-            height: 35px;
-            background: var(--whatsapp-green);
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--wa-green), var(--wa-teal));
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
+            font-size: 20px;
+            color: white;
         }
 
-        .wa-chat-area {
+        .wa-contact-info {
             flex: 1;
-            background: #0a0f14;
-            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23111b21' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-            padding: 15px;
+        }
+
+        .wa-contact-name {
+            font-weight: 600;
+            font-size: 15px;
+            color: white;
+        }
+
+        .wa-contact-status {
+            font-size: 11px;
+            color: #a3c9a7;
+        }
+
+        .wa-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .wa-icon-btn {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .wa-icon-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .wa-icon-btn.send-wa {
+            background: var(--wa-green);
+            width: auto;
+            padding: 0 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .wa-icon-btn.send-wa:hover {
+            background: #1ebe57;
+        }
+
+        .wa-chat {
+            flex: 1;
+            padding: 20px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
         }
 
-        .wa-message {
-            max-width: 80%;
+        .wa-chat::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .wa-chat::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+        }
+
+        .wa-bubble {
+            max-width: 75%;
             padding: 8px 12px;
             border-radius: 8px;
-            font-size: 12px;
-            line-height: 1.4;
+            font-size: 13px;
+            line-height: 1.5;
             position: relative;
-            animation: msgPop 0.3s ease;
+            word-wrap: break-word;
+            animation: bubbleIn 0.3s ease;
         }
 
-        @keyframes msgPop {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
+        @keyframes bubbleIn {
+            from { opacity: 0; transform: translateY(10px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
-        .wa-message.sent {
-            background: #005c4b;
-            color: #e9edef;
-            align-self: flex-end;
-            border-top-right-radius: 2px;
-        }
-
-        .wa-message.received {
+        .wa-bubble.received {
             background: #202c33;
             color: #e9edef;
             align-self: flex-start;
             border-top-left-radius: 2px;
         }
 
-        .wa-message .time {
+        .wa-bubble.sent {
+            background: #005c4b;
+            color: #e9edef;
+            align-self: flex-end;
+            border-top-right-radius: 2px;
+        }
+
+        .wa-bubble .bubble-time {
             font-size: 10px;
             color: rgba(255,255,255,0.5);
             text-align: right;
-            margin-top: 3px;
+            margin-top: 4px;
+        }
+
+        .wa-bubble .bubble-name {
+            font-size: 11px;
+            color: #06cf9c;
+            font-weight: 600;
+            margin-bottom: 3px;
         }
 
         .wa-input-bar {
-            background: var(--bg-card);
+            background: var(--bg-tertiary);
             padding: 8px 12px;
             display: flex;
             gap: 8px;
             align-items: center;
-            border-top: 1px solid var(--border-color);
+            border-top: 1px solid var(--border);
         }
 
-        .wa-input-bar input {
+        .wa-input-bar textarea {
             flex: 1;
-            padding: 8px 12px;
+            padding: 10px 15px;
             background: var(--bg-input);
             border: none;
             border-radius: 20px;
             color: white;
-            font-size: 12px;
+            font-size: 13px;
+            resize: none;
+            min-height: auto;
+            height: 40px;
+            max-height: 100px;
         }
 
-        .wa-send-btn {
-            width: 35px;
-            height: 35px;
-            background: var(--accent-green);
+        .wa-input-bar textarea:focus {
+            outline: 2px solid var(--wa-green);
+        }
+
+        /* BOTÕES GERAIS */
+        .btn {
+            padding: 8px 16px;
             border: none;
-            border-radius: 50%;
+            border-radius: 8px;
             cursor: pointer;
-            color: white;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-weight: 600;
+            font-size: 12px;
             transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .wa-send-btn:hover {
-            background: #00c070;
-            transform: scale(1.1);
+        .btn:hover {
+            filter: brightness(1.2);
+            transform: translateY(-1px);
         }
 
-        /* COLUNA DIREITA - INFO */
-        .right-column {
-            background: var(--bg-panel);
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
+        .btn-wa {
+            background: var(--wa-green);
+            color: white;
+        }
+
+        .btn-wa-dark {
+            background: var(--wa-dark);
+            color: white;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 10px;
+            border-radius: 15px;
+        }
+
+        /* TOAST */
+        .toast-container {
+            position: fixed;
+            top: 50px;
+            right: 20px;
+            z-index: 9999;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            gap: 8px;
         }
 
-        .info-item {
-            padding: 10px;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 12px;
-        }
-
-        .info-item .label {
-            color: var(--text-secondary);
-            font-size: 10px;
-            text-transform: uppercase;
-        }
-
-        .info-item .value {
-            color: var(--text-primary);
-            font-weight: 600;
-            margin-top: 2px;
-        }
-
-        .info-item .value.highlight {
-            color: var(--whatsapp-green);
-            font-size: 14px;
-        }
-
-        /* POPUP DE ALERTA */
-        .alert-toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--bg-card);
-            border-left: 4px solid var(--whatsapp-green);
+        .toast {
+            background: var(--bg-tertiary);
             color: white;
             padding: 12px 20px;
-            border-radius: 8px;
-            z-index: 9999;
+            border-radius: 10px;
             font-size: 13px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.5);
-            animation: slideIn 0.3s ease;
+            border-left: 4px solid var(--wa-green);
+            animation: slideLeft 0.3s ease;
             max-width: 350px;
         }
 
-        @keyframes slideIn {
+        @keyframes slideLeft {
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
 
-        /* RESPONSIVO */
-        @media (max-width: 1200px) {
-            .main-container {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto 1fr auto;
-            }
-            
-            .center-column {
-                order: -1;
-            }
-            
-            .map-panel {
-                height: 200px;
-            }
-        }
+        .toast.error { border-left-color: var(--danger); }
+        .toast.warning { border-left-color: var(--warning); }
     </style>
 </head>
 <body>
 
-<!-- TOP BAR -->
-<div class="topbar">
-    <div class="topbar-left">
-        <span class="topbar-logo">💬</span>
-        <h1>Agente de Mensagem</h1>
-        <span class="badge">v7.0</span>
+<!-- BARRA DE ABAS -->
+<div class="tab-bar" id="tabBar">
+    <div class="tab-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
+        <span class="tab-icon">📊</span>
+        <span>Dashboard</span>
     </div>
-    <div class="topbar-right">
-        <div class="connection-status">
-            <div class="status-indicator online" id="statusIndicator"></div>
-            <span id="statusText">Sistema Ativo</span>
-        </div>
+    <div class="tab-item" data-tab="whatsapp-tab" onclick="switchTab('whatsapp-tab')">
+        <span class="tab-icon">💬</span>
+        <span>WhatsApp Web</span>
+        <button class="tab-close" onclick="event.stopPropagation(); closeTab('whatsapp-tab')">×</button>
+    </div>
+    <div class="tab-item" data-tab="map-full" onclick="switchTab('map-full')">
+        <span class="tab-icon">🗺️</span>
+        <span>Mapa Completo</span>
+        <button class="tab-close" onclick="event.stopPropagation(); closeTab('map-full')">×</button>
+    </div>
+    <button class="tab-add" onclick="addNewWhatsAppTab()" title="Nova aba WhatsApp">+</button>
+    <div class="tab-actions">
+        <button class="tab-action-btn" onclick="switchTab('dashboard')" title="Dashboard (Ctrl+1)">📊</button>
+        <button class="tab-action-btn" onclick="switchTab('whatsapp-tab')" title="WhatsApp (Ctrl+2)">💬</button>
+        <button class="tab-action-btn" onclick="switchTab('map-full')" title="Mapa (Ctrl+3)">🗺️</button>
     </div>
 </div>
 
-<!-- MAIN LAYOUT -->
-<div class="main-container">
-    <!-- COLUNA ESQUERDA - CONTROLES -->
-    <div class="left-column">
-        <div class="column-header">📋 Dados do Cliente</div>
-        <div class="column-body">
-            <div class="mini-card">
-                <label>Cole o texto aqui</label>
-                <textarea id="fonte" placeholder="Nome: João Silva&#10;Contrato: 12345&#10;Endereço: Rua das Flores, 123&#10;Bairro: Centro&#10;Cidade: São Paulo - SP&#10;Telefone: (11) 91234-5678" oninput="processarTexto()"></textarea>
-            </div>
-            
-            <div class="mini-card">
-                <label>📱 Telefones</label>
-                <div class="phone-chips" id="phoneChips">
-                    <span style="color:var(--text-secondary);font-size:11px;">Aguardando...</span>
+<!-- ÁREA DE CONTEÚDO -->
+<div class="tab-content-area">
+    
+    <!-- ABA DASHBOARD -->
+    <div class="tab-panel active" id="panel-dashboard">
+        <div class="dashboard">
+            <!-- COLUNA 1: DADOS -->
+            <div class="panel-card" style="grid-row: span 2;">
+                <div class="panel-header">📋 Dados do Cliente</div>
+                <div class="panel-body">
+                    <textarea id="fonte" placeholder="Cole o texto aqui...&#10;&#10;Nome: João Silva&#10;Contrato: 12345&#10;Endereço: Rua das Flores, 123&#10;Bairro: Centro&#10;Cidade: São Paulo - SP&#10;Telefone: (11) 91234-5678" oninput="processarTexto()" style="margin-bottom:10px;"></textarea>
+                    
+                    <div style="font-size:10px;color:var(--text-secondary);margin-bottom:5px;">📱 TELEFONES</div>
+                    <div class="phone-chips" id="phoneChips" style="margin-bottom:10px;">
+                        <span style="color:var(--text-secondary);font-size:11px;">Aguardando...</span>
+                    </div>
+                    <input type="text" id="telefoneInput" placeholder="Selecione um telefone..." readonly style="margin-bottom:10px;">
+                    
+                    <div style="font-size:10px;color:var(--text-secondary);margin-bottom:5px;">⚙️ OPÇÕES</div>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;margin-bottom:4px;">
+                        <input type="checkbox" id="incluirAgenda" checked onchange="gerarMensagem()"> 📅 Incluir agenda
+                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;margin-bottom:8px;">
+                        <input type="checkbox" id="incluirLocalizacao" checked onchange="gerarMensagem()"> 📍 Incluir localização
+                    </label>
+                    
+                    <button class="btn btn-wa" style="width:100%;margin-bottom:8px;" onclick="abrirWhatsAppNaAba()">
+                        💬 ABRIR NO WHATSAPP (ABA INTERNA)
+                    </button>
+                    <button class="btn btn-wa-dark" style="width:100%;margin-bottom:8px;" onclick="abrirWhatsAppWebPopup()">
+                        🌐 ABRIR WHATSAPP WEB (JANELA)
+                    </button>
+                    <button class="btn btn-outline" style="width:100%;" onclick="copiarMensagem()">
+                        📋 COPIAR MENSAGEM
+                    </button>
                 </div>
-                <input type="text" id="telefoneInput" placeholder="Selecionado..." readonly style="margin-top:6px;">
             </div>
             
-            <div class="mini-card">
-                <label>⚙️ Opções</label>
-                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;color:var(--text-primary);margin-bottom:4px;">
-                    <input type="checkbox" id="incluirAgenda" checked onchange="gerarMensagem()"> 📅 Incluir agenda
-                </label>
-                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;color:var(--text-primary);">
-                    <input type="checkbox" id="incluirLocalizacao" checked onchange="gerarMensagem()"> 📍 Incluir localização
-                </label>
+            <!-- COLUNA 2: MAPA -->
+            <div class="panel-card">
+                <div class="panel-header">🗺️ Mapa de Localização</div>
+                <div class="map-wrapper">
+                    <div id="map"></div>
+                    <div class="map-address" id="mapAddress">📍 Aguardando endereço...</div>
+                    <div class="map-controls">
+                        <button class="map-btn" onclick="centralizarEndereco()">📍 Ver endereço</button>
+                        <button class="map-btn" onclick="minhaLocalizacao()">🎯 Minha localização</button>
+                        <button class="map-btn" onclick="abrirGoogleMaps()">🗺️ Google Maps</button>
+                        <button class="map-btn" onclick="switchTab('map-full')">🔍 Tela cheia</button>
+                    </div>
+                </div>
             </div>
             
-            <button class="btn btn-wa" onclick="enviarMensagem()" id="btnEnviar">
-                💬 ENVIAR MENSAGEM
-            </button>
+            <!-- COLUNA 2B: WHATSAPP PREVIEW -->
+            <div class="panel-card">
+                <div class="panel-header">💬 Pré-visualização WhatsApp</div>
+                <div class="wa-chat" id="waChatPreview" style="background:#0a0f14;">
+                    <div class="wa-bubble received">
+                        <div class="bubble-name">Assistente</div>
+                        👋 Esta é a pré-visualização da conversa.<br>
+                        Cole os dados do cliente e veja a mensagem aqui!
+                        <div class="bubble-time">Agora</div>
+                    </div>
+                </div>
+            </div>
             
-            <div class="btn-group">
-                <button class="btn btn-copy" onclick="copiarMensagem()">📋 Copiar</button>
-                <button class="btn btn-clear" onclick="limparTudo()">🗑️ Limpar</button>
+            <!-- COLUNA 3: INFO -->
+            <div class="panel-card" style="grid-row: span 2;">
+                <div class="panel-header">📊 Informações</div>
+                <div class="panel-body">
+                    <div class="data-row"><span class="key">👤 Nome</span><span class="val" id="infoNome">-</span></div>
+                    <div class="data-row"><span class="key">📄 Contrato</span><span class="val" id="infoContrato">-</span></div>
+                    <div class="data-row"><span class="key">📍 Endereço</span><span class="val" id="infoEndereco">-</span></div>
+                    <div class="data-row"><span class="key">🏙️ Cidade/UF</span><span class="val highlight" id="infoCidade">-</span></div>
+                    <div class="data-row"><span class="key">📱 Telefone</span><span class="val highlight" id="infoTelefone">-</span></div>
+                    <div class="data-row"><span class="key">📊 Envios hoje</span><span class="val" id="infoEnvios">0</span></div>
+                    <hr style="border-color:var(--border);margin:10px 0;">
+                    <button class="btn btn-outline btn-sm" style="width:100%;margin-bottom:5px;" onclick="switchTab('whatsapp-tab')">
+                        💬 Ir para WhatsApp
+                    </button>
+                    <button class="btn btn-outline btn-sm" style="width:100%;" onclick="switchTab('map-full')">
+                        🗺️ Ir para Mapa
+                    </button>
+                </div>
             </div>
         </div>
     </div>
     
-    <!-- COLUNA CENTRAL - MAPA + WHATSAPP SIMULATOR -->
-    <div class="center-column">
-        <!-- MAPA -->
-        <div class="map-panel">
-            <div class="column-header">🗺️ Mapa de Localização</div>
-            <div class="map-container">
-                <div id="map"></div>
-                <div class="map-address-bar" id="mapAddressBar">
-                    📍 Aguardando endereço...
+    <!-- ABA WHATSAPP WEB (INTERNA) -->
+    <div class="tab-panel" id="panel-whatsapp-tab">
+        <div class="whatsapp-container">
+            <div class="wa-top-bar">
+                <div class="wa-avatar" id="waTabAvatar">👤</div>
+                <div class="wa-contact-info">
+                    <div class="wa-contact-name" id="waTabName">Cliente</div>
+                    <div class="wa-contact-status" id="waTabPhone">Selecione um telefone</div>
                 </div>
-                <div class="map-overlay">
-                    <button class="map-btn" onclick="centralizarEndereco()">📍 Ver endereço</button>
-                    <button class="map-btn" onclick="minhaLocalizacao()">🎯 Minha localização</button>
-                    <button class="map-btn" onclick="abrirGoogleMaps()">🗺️ Google Maps</button>
+                <div class="wa-actions">
+                    <button class="wa-icon-btn send-wa" onclick="abrirWhatsAppWebPopup()" title="Abrir WhatsApp Web oficial">
+                        🌐 Abrir Web
+                    </button>
                 </div>
             </div>
-        </div>
-        
-        <!-- WHATSAPP SIMULATOR -->
-        <div class="whatsapp-panel">
-            <div class="whatsapp-chat-header">
-                <div class="wa-avatar">👤</div>
-                <div>
-                    <div style="font-weight:600;font-size:13px;" id="waContactName">Cliente</div>
-                    <div style="font-size:10px;color:#a3c9a7;" id="waContactPhone">Selecione um telefone</div>
-                </div>
-                <button class="btn" style="margin-left:auto;background:var(--whatsapp-green);color:white;padding:6px 12px;border-radius:20px;font-size:11px;" onclick="abrirWhatsAppWebReal()">
-                    🌐 Abrir WhatsApp Web
-                </button>
-            </div>
-            <div class="wa-chat-area" id="waChatArea">
-                <div class="wa-message received">
-                    👋 Olá! Esta é uma simulação do WhatsApp.<br>
-                    Cole os dados do cliente e gere a mensagem.<br>
-                    Depois clique em <strong>"ENVIAR MENSAGEM"</strong> ou <strong>"Abrir WhatsApp Web"</strong>.
-                    <div class="time">Agora</div>
+            <div class="wa-chat" id="waTabChat">
+                <div class="wa-bubble received">
+                    <div class="bubble-name">Sistema</div>
+                    👋 Bem-vindo ao <strong>WhatsApp integrado</strong>!<br><br>
+                    📋 <strong>Como usar:</strong><br>
+                    1. Vá para a aba <strong>Dashboard</strong><br>
+                    2. Cole os dados do cliente<br>
+                    3. Volte para esta aba<br>
+                    4. A mensagem aparecerá aqui<br>
+                    5. Clique em <strong>"Abrir Web"</strong> para enviar
+                    <div class="bubble-time">Agora</div>
                 </div>
             </div>
             <div class="wa-input-bar">
-                <input type="text" id="waMessageInput" placeholder="Mensagem..." readonly>
-                <button class="wa-send-btn" onclick="enviarMensagem()">➤</button>
+                <textarea id="waTabInput" placeholder="Digite uma mensagem ou use o Dashboard..." rows="1"></textarea>
+                <button class="wa-icon-btn send-wa" onclick="enviarMensagemAbaWhatsApp()" style="width:40px;height:40px;padding:0;border-radius:50%;justify-content:center;">
+                    ➤
+                </button>
             </div>
         </div>
     </div>
     
-    <!-- COLUNA DIREITA - INFORMAÇÕES -->
-    <div class="right-column">
-        <div class="column-header">📊 Informações</div>
-        <div class="column-body">
-            <div class="info-item">
-                <div class="label">👤 Nome</div>
-                <div class="value" id="infoNome">-</div>
+    <!-- ABA MAPA COMPLETO -->
+    <div class="tab-panel" id="panel-map-full">
+        <div style="width:100%;height:100%;position:relative;">
+            <div id="mapFull" style="width:100%;height:100%;"></div>
+            <div style="position:absolute;top:10px;left:10px;right:10px;z-index:1000;background:rgba(0,0,0,0.85);color:white;padding:10px 15px;border-radius:8px;font-size:12px;backdrop-filter:blur(10px);" id="mapFullAddress">
+                📍 Aguardando endereço...
             </div>
-            <div class="info-item">
-                <div class="label">📄 Contrato</div>
-                <div class="value" id="infoContrato">-</div>
-            </div>
-            <div class="info-item">
-                <div class="label">📍 Endereço</div>
-                <div class="value" id="infoEndereco">-</div>
-            </div>
-            <div class="info-item">
-                <div class="label">🏙️ Cidade/UF</div>
-                <div class="value highlight" id="infoCidade">-</div>
-            </div>
-            <div class="info-item">
-                <div class="label">📱 Telefone</div>
-                <div class="value highlight" id="infoTelefone">-</div>
-            </div>
-            <div class="info-item">
-                <div class="label">📊 Envios hoje</div>
-                <div class="value" id="infoEnvios">0</div>
+            <div style="position:absolute;bottom:15px;left:15px;right:15px;z-index:1000;display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="map-btn" onclick="centralizarEnderecoFull()">📍 Ver endereço</button>
+                <button class="map-btn" onclick="minhaLocalizacaoFull()">🎯 Minha localização</button>
+                <button class="map-btn" onclick="abrirGoogleMapsFull()">🗺️ Google Maps</button>
+                <button class="map-btn" onclick="switchTab('dashboard')">📊 Dashboard</button>
             </div>
         </div>
     </div>
 </div>
 
 <!-- TOAST -->
-<div id="toast" class="alert-toast" style="display:none;"></div>
+<div class="toast-container" id="toastContainer"></div>
 
 <script>
 // ============================================
 // VARIÁVEIS GLOBAIS
 // ============================================
-let map, marker, geocoder;
-let mapaInicializado = false;
+let mapDashboard, mapFull, markerDashboard, markerFull;
+let mapasInicializados = false;
 let currentLat = -23.5505;
 let currentLng = -46.6333;
 let currentAddress = '';
+let geocoder;
 
 const DDDS_VALIDOS = new Set([
     11,12,13,14,15,16,17,18,19,21,22,24,27,28,
@@ -700,68 +786,135 @@ let dadosAtuais = {
     cidade: '', estado: '', cep: 'N/A', mensagem: '', telefonesDisponiveis: []
 };
 
+let abasAbertas = ['dashboard', 'whatsapp-tab', 'map-full'];
+
 // ============================================
-// INICIALIZAÇÃO DO MAPA (LEAFLET + OPENSTREETMAP)
+// SISTEMA DE ABAS
 // ============================================
-function initMap() {
-    try {
-        // Criar mapa Leaflet
-        map = L.map('map', {
-            center: [currentLat, currentLng],
-            zoom: 15,
-            zoomControl: true
-        });
-
-        // Adicionar tiles do OpenStreetMap (gratuito, sem API Key)
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-            maxZoom: 19
-        }).addTo(map);
-
-        // Adicionar marcador inicial
-        marker = L.marker([currentLat, currentLng], {
-            draggable: true
-        }).addTo(map);
-
-        marker.bindPopup('📍 Localização').openPopup();
-
-        // Atualizar coordenadas ao arrastar marcador
-        marker.on('dragend', function(e) {
-            const pos = marker.getLatLng();
-            currentLat = pos.lat;
-            currentLng = pos.lng;
-            reverseGeocode(pos.lat, pos.lng);
-        });
-
-        // Clique no mapa para reposicionar marcador
-        map.on('click', function(e) {
-            marker.setLatLng(e.latlng);
-            currentLat = e.latlng.lat;
-            currentLng = e.latlng.lng;
-            reverseGeocode(e.latlng.lat, e.latlng.lng);
-        });
-
-        mapaInicializado = true;
-        console.log('🗺️ Mapa Leaflet inicializado com sucesso!');
-        
-    } catch (error) {
-        console.error('❌ Erro ao inicializar mapa:', error);
-        document.getElementById('mapAddressBar').innerHTML = '❌ Erro ao carregar mapa';
+function switchTab(tabName) {
+    // Desativar todas as abas
+    document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    
+    // Ativar a aba selecionada
+    const tabEl = document.querySelector(`.tab-item[data-tab="${tabName}"]`);
+    const panelEl = document.getElementById(`panel-${tabName}`);
+    
+    if (tabEl) tabEl.classList.add('active');
+    if (panelEl) panelEl.classList.add('active');
+    
+    // Inicializar mapa da aba se necessário
+    if (tabName === 'map-full' && !mapFull) {
+        setTimeout(initMapFull, 300);
+    }
+    
+    // Atualizar WhatsApp tab se for selecionada
+    if (tabName === 'whatsapp-tab') {
+        atualizarWhatsAppTab();
     }
 }
 
-function reverseGeocode(lat, lng) {
+function closeTab(tabName) {
+    if (tabName === 'dashboard') return; // Não fecha o dashboard
+    
+    const tabEl = document.querySelector(`.tab-item[data-tab="${tabName}"]`);
+    if (tabEl) tabEl.remove();
+    
+    abasAbertas = abasAbertas.filter(a => a !== tabName);
+    
+    // Se a aba ativa foi fechada, volta para dashboard
+    if (tabEl?.classList.contains('active')) {
+        switchTab('dashboard');
+    }
+}
+
+function addNewWhatsAppTab() {
+    mostrarToast('💡 Use a aba WhatsApp existente ou abra o WhatsApp Web oficial');
+}
+
+// ============================================
+// MAPAS (LEAFLET)
+// ============================================
+function initMapDashboard() {
+    if (mapDashboard) return;
+    
+    mapDashboard = L.map('map', {
+        center: [currentLat, currentLng],
+        zoom: 15,
+        zoomControl: true
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap',
+        maxZoom: 19
+    }).addTo(mapDashboard);
+
+    markerDashboard = L.marker([currentLat, currentLng], { draggable: true }).addTo(mapDashboard);
+    
+    markerDashboard.on('dragend', function(e) {
+        const pos = markerDashboard.getLatLng();
+        currentLat = pos.lat;
+        currentLng = pos.lng;
+        reverseGeocode(pos.lat, pos.lng, 'dashboard');
+    });
+
+    mapDashboard.on('click', function(e) {
+        markerDashboard.setLatLng(e.latlng);
+        currentLat = e.latlng.lat;
+        currentLng = e.latlng.lng;
+        reverseGeocode(e.latlng.lat, e.latlng.lng, 'dashboard');
+    });
+    
+    mapasInicializados = true;
+}
+
+function initMapFull() {
+    if (mapFull) return;
+    
+    mapFull = L.map('mapFull', {
+        center: [currentLat, currentLng],
+        zoom: 16,
+        zoomControl: true
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap',
+        maxZoom: 19
+    }).addTo(mapFull);
+
+    markerFull = L.marker([currentLat, currentLng], { draggable: true }).addTo(mapFull);
+    
+    markerFull.on('dragend', function(e) {
+        const pos = markerFull.getLatLng();
+        currentLat = pos.lat;
+        currentLng = pos.lng;
+        reverseGeocode(pos.lat, pos.lng, 'full');
+    });
+
+    mapFull.on('click', function(e) {
+        markerFull.setLatLng(e.latlng);
+        currentLat = e.latlng.lat;
+        currentLng = e.latlng.lng;
+        reverseGeocode(e.latlng.lat, e.latlng.lng, 'full');
+    });
+}
+
+function reverseGeocode(lat, lng, source = 'dashboard') {
     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`)
         .then(res => res.json())
         .then(data => {
-            const addr = data.address;
             currentAddress = data.display_name;
-            
+            const addr = data.address;
             const cidade = addr.city || addr.town || addr.municipality || '';
             const estado = addr.state || '';
             
-            document.getElementById('mapAddressBar').innerHTML = 
-                `📍 ${currentAddress.substring(0, 80)}...`;
+            const addressText = `📍 ${currentAddress.substring(0, 80)}...`;
+            
+            if (source === 'dashboard') {
+                document.getElementById('mapAddress').innerHTML = addressText;
+            } else {
+                document.getElementById('mapFullAddress').innerHTML = addressText;
+            }
             
             if (cidade) {
                 document.getElementById('infoCidade').textContent = 
@@ -769,67 +922,89 @@ function reverseGeocode(lat, lng) {
             }
         })
         .catch(() => {
-            document.getElementById('mapAddressBar').innerHTML = 
-                `📍 Coordenadas: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            const text = `📍 Coordenadas: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            document.getElementById('mapAddress').innerHTML = text;
+            document.getElementById('mapFullAddress').innerHTML = text;
         });
 }
 
 function geocodeAddress(endereco) {
-    if (!mapaInicializado || !endereco) return;
+    if (!endereco) return;
     
-    const query = endereco + ', Brasil';
-    
-    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`)
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco + ', Brasil')}&limit=1`)
         .then(res => res.json())
         .then(data => {
             if (data && data[0]) {
                 const lat = parseFloat(data[0].lat);
                 const lng = parseFloat(data[0].lon);
-                
                 currentLat = lat;
                 currentLng = lng;
                 
-                map.setView([lat, lng], 16);
-                marker.setLatLng([lat, lng]);
-                
-                document.getElementById('mapAddressBar').innerHTML = 
-                    `📍 ${data[0].display_name.substring(0, 80)}...`;
+                if (mapDashboard && markerDashboard) {
+                    mapDashboard.setView([lat, lng], 16);
+                    markerDashboard.setLatLng([lat, lng]);
+                }
+                if (mapFull && markerFull) {
+                    mapFull.setView([lat, lng], 16);
+                    markerFull.setLatLng([lat, lng]);
+                }
                 
                 currentAddress = data[0].display_name;
+                document.getElementById('mapAddress').innerHTML = `📍 ${currentAddress.substring(0, 80)}...`;
+                if (document.getElementById('mapFullAddress')) {
+                    document.getElementById('mapFullAddress').innerHTML = `📍 ${currentAddress.substring(0, 80)}...`;
+                }
             }
-        })
-        .catch(err => console.error('Erro geocoding:', err));
+        });
 }
 
 function centralizarEndereco() {
     if (dadosAtuais.endereco !== 'NÃO INFORMADO') {
-        geocodeAddress(dadosAtuais.endereco + ', ' + (dadosAtuais.cidade || '') + ', Brasil');
-        mostrarToast('📍 Centralizando no endereço do cliente...');
-    } else {
-        mostrarToast('⚠️ Nenhum endereço carregado');
+        geocodeAddress(dadosAtuais.endereco + (dadosAtuais.cidade ? ', ' + dadosAtuais.cidade : ''));
+    }
+}
+
+function centralizarEnderecoFull() {
+    if (dadosAtuais.endereco !== 'NÃO INFORMADO') {
+        geocodeAddress(dadosAtuais.endereco + (dadosAtuais.cidade ? ', ' + dadosAtuais.cidade : ''));
+        switchTab('map-full');
     }
 }
 
 function minhaLocalizacao() {
     if (navigator.geolocation) {
-        mostrarToast('🎯 Buscando sua localização...');
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                currentLat = pos.coords.latitude;
-                currentLng = pos.coords.longitude;
-                map.setView([currentLat, currentLng], 17);
-                marker.setLatLng([currentLat, currentLng]);
-                reverseGeocode(currentLat, currentLng);
-                mostrarToast('✅ Sua localização encontrada!');
-            },
-            () => mostrarToast('❌ Não foi possível obter localização')
-        );
+        navigator.geolocation.getCurrentPosition(pos => {
+            currentLat = pos.coords.latitude;
+            currentLng = pos.coords.longitude;
+            if (mapDashboard && markerDashboard) {
+                mapDashboard.setView([currentLat, currentLng], 17);
+                markerDashboard.setLatLng([currentLat, currentLng]);
+            }
+            reverseGeocode(currentLat, currentLng, 'dashboard');
+        });
+    }
+}
+
+function minhaLocalizacaoFull() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+            currentLat = pos.coords.latitude;
+            currentLng = pos.coords.longitude;
+            if (mapFull && markerFull) {
+                mapFull.setView([currentLat, currentLng], 17);
+                markerFull.setLatLng([currentLat, currentLng]);
+            }
+            reverseGeocode(currentLat, currentLng, 'full');
+        });
     }
 }
 
 function abrirGoogleMaps() {
-    const url = `https://www.google.com/maps?q=${currentLat},${currentLng}`;
-    window.open(url, '_blank');
+    window.open(`https://www.google.com/maps?q=${currentLat},${currentLng}`, '_blank');
+}
+
+function abrirGoogleMapsFull() {
+    window.open(`https://www.google.com/maps?q=${currentLat},${currentLng}`, '_blank');
 }
 
 function converterEstado(nome) {
@@ -846,14 +1021,13 @@ function converterEstado(nome) {
 }
 
 // ============================================
-// VALIDAÇÃO DE TELEFONE
+// PROCESSAMENTO DE DADOS
 // ============================================
 function validarTelefone(numero) {
     const limpo = numero.replace(/\D/g, '');
     if (limpo.length !== 10 && limpo.length !== 11) return { valido: false };
     const ddd = parseInt(limpo.substring(0, 2));
     if (!DDDS_VALIDOS.has(ddd)) return { valido: false };
-    if (limpo.length === 11 && parseInt(limpo[2]) !== 9) return { valido: false };
     return { valido: true };
 }
 
@@ -865,15 +1039,9 @@ function formatarTelefone(numero) {
     return numero;
 }
 
-// ============================================
-// PROCESSAMENTO DE TEXTO
-// ============================================
 function extrairCidadeEstado(endereco) {
     if (!endereco || endereco === "NÃO INFORMADO") return { cidade: '', estado: '' };
-    const padroes = [
-        /(\w[\w\s]+?)\s*[-–]\s*([A-Z]{2})/i,
-        /(\w[\w\s]+?)\s*,\s*([A-Z]{2})/i,
-    ];
+    const padroes = [/(\w[\w\s]+?)\s*[-–]\s*([A-Z]{2})/i, /(\w[\w\s]+?)\s*,\s*([A-Z]{2})/i];
     for (const regex of padroes) {
         const match = endereco.match(regex);
         if (match) return { cidade: match[1].trim(), estado: match[2].toUpperCase() };
@@ -885,7 +1053,6 @@ function processarTexto() {
     const texto = document.getElementById("fonte").value;
     if (!texto || texto.length < 5) return;
     
-    // Extrair telefones
     const telefones = [];
     const regexTel = /\((\d{2,3})\)\s*(\d)?\s*(\d{4,5})-(\d{4})/g;
     let match;
@@ -906,27 +1073,20 @@ function processarTexto() {
     const cidadeMatch = texto.match(/Cidade:\s*([^\n]+)/i)?.[1]?.trim() || '';
     const estadoMatch = texto.match(/Estado:\s*([^\n]+)/i)?.[1]?.trim() || '';
     
-    let cidade = cidadeMatch;
-    let estado = estadoMatch;
-    if (!cidade) {
-        const ext = extrairCidadeEstado(endereco);
-        cidade = ext.cidade;
-        estado = ext.estado;
-    }
+    let cidade = cidadeMatch, estado = estadoMatch;
+    if (!cidade) { const ext = extrairCidadeEstado(endereco); cidade = ext.cidade; estado = ext.estado; }
     
     dadosAtuais = { ...dadosAtuais, nome, contrato, endereco, bairro, cidade, estado, telefonesDisponiveis: telefones };
     
-    // Atualizar interface
     document.getElementById('infoNome').textContent = nome;
     document.getElementById('infoContrato').textContent = contrato;
-    document.getElementById('infoEndereco').textContent = endereco.substring(0, 50) + '...';
+    document.getElementById('infoEndereco').textContent = endereco.substring(0, 40) + '...';
     document.getElementById('infoCidade').textContent = cidade ? `${cidade}${estado ? '/' + estado : ''}` : '-';
     
-    // Renderizar chips de telefone
     const chipsContainer = document.getElementById('phoneChips');
     chipsContainer.innerHTML = '';
     if (telefones.length === 0) {
-        chipsContainer.innerHTML = '<span style="color:var(--text-secondary);font-size:11px;">Nenhum telefone válido</span>';
+        chipsContainer.innerHTML = '<span style="color:var(--text-secondary);font-size:11px;">Nenhum telefone</span>';
     } else {
         telefones.forEach((tel, idx) => {
             const chip = document.createElement('span');
@@ -939,29 +1099,25 @@ function processarTexto() {
         selecionarTelefone(telefones[0]);
     }
     
-    // Geocodificar endereço no mapa
-    if (endereco !== 'NÃO INFORMADO' && mapaInicializado) {
-        geocodeAddress(endereco + (cidade ? ', ' + cidade : ''));
-    }
-    
+    if (endereco !== 'NÃO INFORMADO') geocodeAddress(endereco + (cidade ? ', ' + cidade : ''));
     gerarMensagem();
     atualizarContadorEnvios();
+    atualizarWhatsAppTab();
 }
 
 function selecionarTelefone(tel) {
     document.querySelectorAll('.phone-chip').forEach(c => c.classList.remove('selected'));
     const chip = document.querySelector(`.phone-chip[data-tel="${tel}"]`);
     if (chip) chip.classList.add('selected');
-    
     dadosAtuais.numero = tel;
     document.getElementById('telefoneInput').value = formatarTelefone(tel);
     document.getElementById('infoTelefone').textContent = formatarTelefone(tel);
-    document.getElementById('waContactPhone').textContent = formatarTelefone(tel);
+    atualizarWhatsAppTab();
     gerarMensagem();
 }
 
 // ============================================
-// GERAÇÃO DE MENSAGEM
+// MENSAGEM
 // ============================================
 function gerarMensagem() {
     const hora = new Date().getHours();
@@ -969,40 +1125,37 @@ function gerarMensagem() {
     
     let msg = `${saudacao}! Como você está? 😊\n\n`;
     msg += `Aqui quem fala é a equipe de atendimento.\n\n`;
-    msg += `📋 *Dados:*\n`;
-    msg += `• Nome: ${dadosAtuais.nome}\n`;
-    msg += `• Contrato: ${dadosAtuais.contrato}\n`;
-    msg += `• Endereço: ${dadosAtuais.endereco}\n`;
-    
-    if (dadosAtuais.cidade) {
-        msg += `• Cidade/UF: ${dadosAtuais.cidade}${dadosAtuais.estado ? '/' + dadosAtuais.estado : ''}\n`;
-    }
-    
-    if (document.getElementById('incluirAgenda')?.checked) {
-        msg += `\n📅 Conseguimos um horário hoje para você! 🗓️\n`;
-    }
-    
+    msg += `📋 *Dados:*\n• Nome: ${dadosAtuais.nome}\n• Contrato: ${dadosAtuais.contrato}\n• Endereço: ${dadosAtuais.endereco}\n`;
+    if (dadosAtuais.cidade) msg += `• Cidade/UF: ${dadosAtuais.cidade}${dadosAtuais.estado ? '/' + dadosAtuais.estado : ''}\n`;
+    if (document.getElementById('incluirAgenda')?.checked) msg += `\n📅 Conseguimos um horário hoje! 🗓️\n`;
     if (document.getElementById('incluirLocalizacao')?.checked && dadosAtuais.endereco !== "NÃO INFORMADO") {
-        const mapsLink = `https://www.google.com/maps?q=${encodeURIComponent(dadosAtuais.endereco + (dadosAtuais.cidade ? ', ' + dadosAtuais.cidade : ''))}`;
-        msg += `\n📍 Localização: ${dadosAtuais.endereco}\n`;
-        msg += `🗺️ Mapa: ${mapsLink}\n`;
+        msg += `\n📍 ${dadosAtuais.endereco}\n🗺️ https://www.google.com/maps?q=${encodeURIComponent(dadosAtuais.endereco)}\n`;
     }
-    
-    msg += `\n✨ Confirme respondendo esta mensagem!\n`;
-    msg += `Tenha um excelente ${hora < 12 ? 'dia' : (hora < 18 ? 'tarde' : 'noite')}! ❤️`;
+    msg += `\n✨ Confirme respondendo!\nTenha um excelente ${hora < 12 ? 'dia' : (hora < 18 ? 'tarde' : 'noite')}! ❤️`;
     
     dadosAtuais.mensagem = msg;
-    
-    // Atualizar preview na interface do WhatsApp
-    document.getElementById('waMessageInput').value = msg;
+    document.getElementById('waTabInput').value = msg;
     
     return msg;
 }
 
 // ============================================
-// WHATSAPP SIMULATOR + REAL
+// WHATSAPP TAB
 // ============================================
-function enviarMensagem() {
+function atualizarWhatsAppTab() {
+    const nome = dadosAtuais.nome !== 'NÃO IDENTIFICADO' ? dadosAtuais.nome : 'Cliente';
+    const telefone = dadosAtuais.numero ? formatarTelefone(dadosAtuais.numero) : 'Selecione um telefone';
+    
+    document.getElementById('waTabName').textContent = nome;
+    document.getElementById('waTabPhone').textContent = telefone;
+    document.getElementById('waTabAvatar').textContent = nome.charAt(0).toUpperCase();
+    
+    if (dadosAtuais.mensagem) {
+        document.getElementById('waTabInput').value = dadosAtuais.mensagem;
+    }
+}
+
+function abrirWhatsAppNaAba() {
     if (!dadosAtuais.numero) {
         mostrarToast('❌ Selecione um telefone primeiro!');
         return;
@@ -1010,30 +1163,69 @@ function enviarMensagem() {
     
     if (!dadosAtuais.mensagem) gerarMensagem();
     
-    // Adicionar mensagem ao chat simulado
-    const chatArea = document.getElementById('waChatArea');
+    // Adicionar mensagem ao chat da aba WhatsApp
+    const chatArea = document.getElementById('waTabChat');
     const hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     
-    const msgDiv = document.createElement('div');
-    msgDiv.className = 'wa-message sent';
-    msgDiv.innerHTML = `
-        ${dadosAtuais.mensagem.replace(/\n/g, '<br>')}
-        <div class="time">${hora} ✔️</div>
-    `;
-    chatArea.appendChild(msgDiv);
+    const bubble = document.createElement('div');
+    bubble.className = 'wa-bubble sent';
+    bubble.innerHTML = `${dadosAtuais.mensagem.replace(/\n/g, '<br>')}<div class="bubble-time">${hora} ✔️</div>`;
+    chatArea.appendChild(bubble);
     chatArea.scrollTop = chatArea.scrollHeight;
     
-    // Abrir WhatsApp Web real
-    abrirWhatsAppWebReal();
+    // Atualizar preview no dashboard
+    atualizarPreviewDashboard();
+    
+    // Mudar para a aba WhatsApp
+    switchTab('whatsapp-tab');
+    
+    // Copiar mensagem
+    navigator.clipboard.writeText(dadosAtuais.mensagem).catch(() => {});
     
     // Salvar histórico
     salvarHistorico();
     atualizarContadorEnvios();
     
-    mostrarToast('✅ Mensagem enviada para WhatsApp Web!');
+    mostrarToast('💬 Mensagem adicionada ao chat! Clique em "Abrir Web" para enviar.');
 }
 
-function abrirWhatsAppWebReal() {
+function enviarMensagemAbaWhatsApp() {
+    const inputMsg = document.getElementById('waTabInput').value.trim();
+    if (!inputMsg && !dadosAtuais.mensagem) return;
+    
+    const msg = inputMsg || dadosAtuais.mensagem;
+    dadosAtuais.mensagem = msg;
+    
+    const chatArea = document.getElementById('waTabChat');
+    const hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    
+    const bubble = document.createElement('div');
+    bubble.className = 'wa-bubble sent';
+    bubble.innerHTML = `${msg.replace(/\n/g, '<br>')}<div class="bubble-time">${hora} ✔️</div>`;
+    chatArea.appendChild(bubble);
+    chatArea.scrollTop = chatArea.scrollHeight;
+    
+    document.getElementById('waTabInput').value = '';
+    
+    // Abrir WhatsApp Web
+    abrirWhatsAppWebPopup();
+    salvarHistorico();
+    atualizarContadorEnvios();
+    atualizarPreviewDashboard();
+}
+
+function atualizarPreviewDashboard() {
+    const previewChat = document.getElementById('waChatPreview');
+    const hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    
+    const bubble = document.createElement('div');
+    bubble.className = 'wa-bubble sent';
+    bubble.innerHTML = `${dadosAtuais.mensagem ? dadosAtuais.mensagem.replace(/\n/g, '<br>').substring(0, 200) + '...' : 'Mensagem...'}<div class="bubble-time">${hora} ✔️</div>`;
+    previewChat.appendChild(bubble);
+    previewChat.scrollTop = previewChat.scrollHeight;
+}
+
+function abrirWhatsAppWebPopup() {
     if (!dadosAtuais.numero) {
         mostrarToast('❌ Selecione um telefone primeiro!');
         return;
@@ -1043,36 +1235,21 @@ function abrirWhatsAppWebReal() {
     
     const numero = dadosAtuais.numero.replace(/\D/g, '');
     let numeroFormatado = numero;
-    if (numeroFormatado.length === 10) {
-        numeroFormatado = numeroFormatado.substring(0, 2) + '9' + numeroFormatado.substring(2);
-    }
+    if (numeroFormatado.length === 10) numeroFormatado = numeroFormatado.substring(0, 2) + '9' + numeroFormatado.substring(2);
     
-    // Copiar mensagem para clipboard
     navigator.clipboard.writeText(dadosAtuais.mensagem).catch(() => {});
     
-    // URL do WhatsApp Web
     const waUrl = `https://web.whatsapp.com/send?phone=55${numeroFormatado}&text=${encodeURIComponent(dadosAtuais.mensagem)}`;
     
-    // Abrir em nova janela
-    const width = 1000;
-    const height = 700;
-    const left = (screen.width - width) / 2;
-    const top = (screen.height - height) / 2;
-    
-    window.open(
-        waUrl,
-        'WhatsAppWeb',
-        `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,scrollbars=yes`
-    );
+    window.open(waUrl, 'WhatsAppWeb', 
+        `width=1000,height=700,left=${(screen.width-1000)/2},top=${(screen.height-700)/2}`);
     
     mostrarToast('🌐 WhatsApp Web aberto! Revise e clique Enviar.');
 }
 
 function copiarMensagem() {
     if (!dadosAtuais.mensagem) gerarMensagem();
-    navigator.clipboard.writeText(dadosAtuais.mensagem).then(() => {
-        mostrarToast('📋 Mensagem copiada!');
-    });
+    navigator.clipboard.writeText(dadosAtuais.mensagem).then(() => mostrarToast('📋 Copiado!'));
 }
 
 // ============================================
@@ -1093,79 +1270,53 @@ function salvarHistorico() {
 function atualizarContadorEnvios() {
     const historico = JSON.parse(localStorage.getItem('historicoMensagens') || '[]');
     const hoje = new Date().toLocaleDateString('pt-BR');
-    const enviosHoje = historico.filter(h => h.dataHora.includes(hoje)).length;
-    document.getElementById('infoEnvios').textContent = enviosHoje;
+    document.getElementById('infoEnvios').textContent = historico.filter(h => h.dataHora.includes(hoje)).length;
 }
 
 // ============================================
-// UTILITÁRIOS
+// TOAST
 // ============================================
-function limparTudo() {
-    document.getElementById('fonte').value = '';
-    document.getElementById('telefoneInput').value = '';
-    document.getElementById('phoneChips').innerHTML = '<span style="color:var(--text-secondary);font-size:11px;">Aguardando...</span>';
-    document.getElementById('waMessageInput').value = '';
-    document.getElementById('infoNome').textContent = '-';
-    document.getElementById('infoContrato').textContent = '-';
-    document.getElementById('infoEndereco').textContent = '-';
-    document.getElementById('infoCidade').textContent = '-';
-    document.getElementById('infoTelefone').textContent = '-';
-    document.getElementById('waContactPhone').textContent = 'Selecione um telefone';
-    document.getElementById('mapAddressBar').innerHTML = '📍 Aguardando endereço...';
-    
-    dadosAtuais = {
-        numero: '', contrato: 'N/A', nome: 'NÃO IDENTIFICADO',
-        endereco: 'NÃO INFORMADO', bairro: 'NÃO INFORMADO',
-        cidade: '', estado: '', cep: 'N/A', mensagem: '', telefonesDisponiveis: []
-    };
-    
-    mostrarToast('✅ Limpo!');
-}
-
 function mostrarToast(msg) {
-    const toast = document.getElementById('toast');
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
     toast.textContent = msg;
-    toast.style.display = 'block';
-    clearTimeout(toast._timeout);
-    toast._timeout = setTimeout(() => {
-        toast.style.display = 'none';
-    }, 3000);
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(() => toast.remove(), 300);
+    }, 3500);
 }
 
 // ============================================
 // INICIALIZAÇÃO
 // ============================================
 window.onload = function() {
-    console.log('🚀 Agente V7.0 iniciado');
+    console.log('🚀 Agente V8.0 - Multi-View iniciado');
     
-    // Inicializar mapa
-    initMap();
-    
-    // Inicializar localStorage
     if (!localStorage.getItem('historicoMensagens')) {
         localStorage.setItem('historicoMensagens', JSON.stringify([]));
     }
     
+    // Inicializar mapa do dashboard
+    setTimeout(initMapDashboard, 500);
+    
     atualizarContadorEnvios();
     gerarMensagem();
     
-    console.log('✅ Mapa Leaflet + WhatsApp Simulator prontos!');
+    console.log('✅ Sistema multi-view pronto!');
+    console.log('📊 Abas: Dashboard | WhatsApp Web | Mapa Completo');
+    console.log('⌨️ Atalhos: Ctrl+1 Dashboard | Ctrl+2 WhatsApp | Ctrl+3 Mapa');
 };
 
-// Atalhos
+// Atalhos de teclado
 document.addEventListener('keydown', function(e) {
-    if (e.ctrlKey && e.key === 'Enter') {
-        e.preventDefault();
-        enviarMensagem();
-    }
-    if (e.ctrlKey && e.key === 'l') {
-        e.preventDefault();
-        limparTudo();
-    }
-    if (e.ctrlKey && e.key === 'w') {
-        e.preventDefault();
-        abrirWhatsAppWebReal();
-    }
+    if (e.ctrlKey && e.key === '1') { e.preventDefault(); switchTab('dashboard'); }
+    if (e.ctrlKey && e.key === '2') { e.preventDefault(); switchTab('whatsapp-tab'); }
+    if (e.ctrlKey && e.key === '3') { e.preventDefault(); switchTab('map-full'); }
+    if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); abrirWhatsAppNaAba(); }
 });
 </script>
 </body>
