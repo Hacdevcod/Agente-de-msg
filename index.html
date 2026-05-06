@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agente V9.0 - WhatsApp Real-Time + Mapa Adaptativo</title>
+    <title>Agente V9.1 - WhatsApp + Mapa | Status Manual</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -23,10 +23,7 @@
             --red: #dc3545;
             --yellow: #ffc107;
             --blue: #17a2b8;
-            --purple: #9b4dff;
-            --radius: 12px;
-            --radius-sm: 8px;
-            --shadow: 0 4px 20px rgba(0,0,0,0.4);
+            --radius: 10px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -44,8 +41,8 @@
         /* TOP BAR */
         .topbar {
             background: linear-gradient(135deg, #075e54, #128C7E);
-            padding: 0 20px;
-            height: 50px;
+            padding: 0 16px;
+            height: 48px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -54,53 +51,52 @@
             flex-shrink: 0;
         }
 
-        .topbar-left { display: flex; align-items: center; gap: 12px; }
-        .topbar-logo { font-size: 24px; }
-        .topbar-title { font-size: 16px; font-weight: 700; color: white; letter-spacing: 0.5px; }
-        .topbar-badge { 
-            background: var(--green); color: white; padding: 3px 10px; 
-            border-radius: 12px; font-size: 10px; font-weight: bold; 
-        }
-        .topbar-right { display: flex; align-items: center; gap: 12px; }
-        .status-pill {
+        .topbar-left { display: flex; align-items: center; gap: 10px; }
+        .topbar-logo { font-size: 22px; }
+        .topbar-title { font-size: 15px; font-weight: 700; color: white; }
+        .topbar-badge { background: var(--green); color: white; padding: 2px 8px; border-radius: 10px; font-size: 9px; font-weight: bold; }
+        .topbar-right { display: flex; align-items: center; gap: 10px; font-size: 11px; }
+
+        .status-indicator {
             display: flex; align-items: center; gap: 6px;
-            background: rgba(0,0,0,0.3); padding: 6px 14px;
-            border-radius: 20px; font-size: 11px;
+            background: rgba(0,0,0,0.3); padding: 5px 12px;
+            border-radius: 15px; font-size: 10px;
         }
         .status-dot { width: 8px; height: 8px; border-radius: 50%; }
-        .status-dot.online { background: #28a745; box-shadow: 0 0 8px rgba(40,167,69,0.5); }
-        .status-dot.offline { background: #666; }
-        .status-dot.responding { background: #ffc107; animation: pulse 1s infinite; }
+        .status-dot.idle { background: #666; }
+        .status-dot.sent { background: #ffc107; animation: pulse 1.5s infinite; }
+        .status-dot.responded { background: #28a745; }
+        .status-dot.noresp { background: #dc3545; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-        /* MAIN LAYOUT - ASSIMÉTRICO E ADAPTATIVO */
+        /* MAIN GRID */
         .main-grid {
             flex: 1;
             display: grid;
-            grid-template-columns: minmax(300px, 380px) 1fr minmax(280px, 340px);
+            grid-template-columns: minmax(280px, 350px) 1fr minmax(260px, 300px);
             grid-template-rows: 1fr 1fr;
-            gap: 8px;
-            padding: 8px;
+            gap: 6px;
+            padding: 6px;
             background: #050505;
             overflow: hidden;
             min-height: 0;
         }
 
-        @media (max-width: 1400px) {
+        @media (max-width: 1300px) {
             .main-grid {
-                grid-template-columns: 320px 1fr;
-                grid-template-rows: auto 1fr 280px;
+                grid-template-columns: 300px 1fr;
+                grid-template-rows: auto 1fr auto;
             }
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 850px) {
             .main-grid {
                 grid-template-columns: 1fr;
                 grid-template-rows: auto auto 1fr auto;
             }
         }
 
-        /* CARDS */
+        /* CARD */
         .card {
             background: var(--surface);
             border-radius: var(--radius);
@@ -113,197 +109,133 @@
 
         .card-header {
             background: var(--surface2);
-            padding: 8px 14px;
+            padding: 7px 12px;
             font-weight: 700;
-            font-size: 11px;
+            font-size: 10px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 8px;
             flex-shrink: 0;
-        }
-
-        .card-header .badge-count {
-            background: var(--teal);
-            color: white;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 10px;
         }
 
         .card-body {
             flex: 1;
             overflow-y: auto;
-            padding: 10px;
+            padding: 8px;
             min-height: 0;
         }
 
         .card-body::-webkit-scrollbar { width: 4px; }
         .card-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-        /* COLUNA 1 - INPUTS (span 2 rows on desktop) */
-        .col-inputs {
-            grid-row: 1 / -1;
-        }
+        /* SPANS */
+        .col-inputs { grid-row: 1 / -1; }
+        .col-info { grid-row: 1 / -1; }
 
-        @media (max-width: 1400px) {
+        @media (max-width: 1300px) {
             .col-inputs { grid-row: auto; }
-        }
-
-        /* COLUNA 2 - MAPA + WHATSAPP */
-        .col-center-top { }
-        .col-center-bottom { }
-
-        /* COLUNA 3 - INFO + STATUS */
-        .col-info {
-            grid-row: 1 / -1;
-        }
-
-        @media (max-width: 1400px) {
             .col-info { grid-row: auto; }
         }
 
-        /* INPUT STYLES */
-        .input-group { margin-bottom: 10px; }
-        .input-group label { 
-            display: block; font-size: 10px; color: var(--text2); 
-            margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px; 
-        }
+        /* INPUTS */
+        .input-group { margin-bottom: 8px; }
+        .input-group label { display: block; font-size: 9px; color: var(--text2); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
 
         textarea, input[type="text"], input[type="tel"] {
             width: 100%;
-            padding: 10px 12px;
+            padding: 8px 10px;
             background: var(--surface3);
             border: 1px solid var(--border);
             color: var(--text);
-            border-radius: var(--radius-sm);
-            font-size: 13px;
+            border-radius: 6px;
+            font-size: 12px;
             font-family: inherit;
-            transition: all 0.3s;
+            transition: all 0.2s;
         }
 
-        textarea:focus, input:focus {
-            outline: none;
-            border-color: var(--teal);
-            box-shadow: 0 0 0 3px rgba(0,168,132,0.15);
-        }
+        textarea:focus, input:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 2px rgba(0,168,132,0.12); }
+        textarea { min-height: 70px; resize: vertical; }
 
-        textarea { min-height: 80px; resize: vertical; }
-
-        /* TELEFONE EDITÁVEL COM CHIPS */
-        .phone-input-wrapper {
+        /* PHONE INPUT COM BOTÃO DIRETO */
+        .phone-row {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             align-items: center;
         }
-
-        .phone-input-wrapper input {
-            flex: 1;
-        }
+        .phone-row input { flex: 1; }
 
         .phone-chips {
             display: flex;
             flex-wrap: wrap;
             gap: 4px;
-            margin-top: 6px;
-            min-height: 26px;
+            margin-top: 5px;
+            min-height: 24px;
         }
 
         .phone-chip {
-            padding: 4px 10px;
+            padding: 4px 9px;
             background: var(--surface3);
             border: 1px solid var(--border);
-            border-radius: 15px;
+            border-radius: 12px;
             cursor: pointer;
-            font-size: 11px;
+            font-size: 10px;
             transition: all 0.2s;
-            white-space: nowrap;
         }
-
         .phone-chip:hover { background: var(--teal); color: white; border-color: var(--teal); }
         .phone-chip.selected { background: var(--green); color: white; border-color: var(--green); font-weight: bold; }
         .phone-chip.responded { background: #1a3a2a; border-color: #28a745; color: #28a745; }
-        .phone-chip.responded::after { content: ' ✅'; font-size: 10px; }
+        .phone-chip.responded::after { content: ' ✅'; }
         .phone-chip.no-response { background: #3a1a1a; border-color: var(--red); color: var(--red); }
-        .phone-chip.no-response::after { content: ' ❌'; font-size: 10px; }
+        .phone-chip.no-response::after { content: ' ❌'; }
 
         /* BOTÕES */
         .btn {
-            padding: 10px 16px;
+            padding: 8px 14px;
             border: none;
-            border-radius: var(--radius-sm);
+            border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
-            font-size: 12px;
+            font-size: 11px;
             transition: all 0.2s;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 5px;
             white-space: nowrap;
         }
-        .btn:hover { filter: brightness(1.15); transform: translateY(-1px); box-shadow: var(--shadow); }
+        .btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
         .btn:active { transform: scale(0.97); }
-        .btn-wa { background: var(--green); color: white; width: 100%; font-size: 13px; }
-        .btn-send { background: var(--teal); color: white; flex: 1; }
-        .btn-copy { background: var(--surface3); color: var(--text); border: 1px solid var(--border); flex: 1; }
+        .btn-wa { background: var(--green); color: white; width: 100%; font-size: 13px; padding: 10px; }
+        .btn-send { background: var(--teal); color: white; }
+        .btn-outline { background: var(--surface3); color: var(--text); border: 1px solid var(--border); }
         .btn-danger { background: transparent; color: var(--red); border: 1px solid var(--red); }
-        .btn-sm { padding: 5px 10px; font-size: 10px; }
-        .btn-group { display: flex; gap: 6px; margin-top: 8px; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: var(--yellow); color: #333; }
+        .btn-sm { padding: 5px 9px; font-size: 9px; }
+        .btn-xs { padding: 3px 7px; font-size: 8px; border-radius: 10px; }
+        .btn-group { display: flex; gap: 5px; margin-top: 6px; }
 
         /* MAPA */
-        .map-wrapper {
-            flex: 1;
-            position: relative;
-            min-height: 200px;
-        }
-
-        #map {
-            width: 100%;
-            height: 100%;
-            border-radius: 0 0 var(--radius) var(--radius);
-        }
+        .map-wrapper { flex: 1; position: relative; min-height: 180px; }
+        #map { width: 100%; height: 100%; border-radius: 0 0 var(--radius) var(--radius); }
 
         .map-address-bar {
-            position: absolute;
-            top: 8px;
-            left: 8px;
-            right: 8px;
-            z-index: 1000;
-            background: rgba(0,0,0,0.85);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 11px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.15);
-            pointer-events: none;
+            position: absolute; top: 6px; left: 6px; right: 6px; z-index: 1000;
+            background: rgba(0,0,0,0.85); color: white; padding: 6px 10px;
+            border-radius: 6px; font-size: 10px; backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.15); pointer-events: none;
         }
-
         .map-controls {
-            position: absolute;
-            bottom: 8px;
-            left: 8px;
-            right: 8px;
-            z-index: 1000;
-            display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
+            position: absolute; bottom: 6px; left: 6px; right: 6px; z-index: 1000;
+            display: flex; gap: 4px; flex-wrap: wrap;
         }
-
         .map-btn {
-            padding: 5px 10px;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 10px;
-            backdrop-filter: blur(10px);
-            transition: all 0.2s;
+            padding: 4px 8px; background: rgba(0,0,0,0.8); color: white;
+            border: 1px solid rgba(255,255,255,0.3); border-radius: 15px;
+            cursor: pointer; font-size: 9px; backdrop-filter: blur(10px); transition: all 0.2s;
         }
         .map-btn:hover { background: rgba(37,211,102,0.8); }
 
@@ -311,126 +243,57 @@
         .wa-chat {
             flex: 1;
             background: #0a0f14;
-            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23111b21' fill-opacity='0.25'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-            padding: 12px;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23111b21' fill-opacity='0.2'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            padding: 10px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 5px;
         }
 
         .wa-bubble {
             max-width: 80%;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 12px;
-            line-height: 1.5;
+            padding: 7px 10px;
+            border-radius: 7px;
+            font-size: 11px;
+            line-height: 1.4;
             word-wrap: break-word;
             animation: bubblePop 0.3s ease;
-            position: relative;
         }
+        @keyframes bubblePop { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-        @keyframes bubblePop {
-            from { opacity: 0; transform: translateY(8px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
+        .wa-bubble.received { background: #202c33; color: #e9edef; align-self: flex-start; border-top-left-radius: 2px; }
+        .wa-bubble.sent { background: #005c4b; color: #e9edef; align-self: flex-end; border-top-right-radius: 2px; }
+        .wa-bubble .bubble-name { font-size: 10px; color: #06cf9c; font-weight: 600; margin-bottom: 2px; }
+        .wa-bubble .bubble-time { font-size: 9px; color: rgba(255,255,255,0.4); text-align: right; margin-top: 2px; }
 
-        .wa-bubble.received {
-            background: #202c33;
-            color: #e9edef;
-            align-self: flex-start;
-            border-top-left-radius: 2px;
-        }
-
-        .wa-bubble.sent {
-            background: #005c4b;
-            color: #e9edef;
-            align-self: flex-end;
-            border-top-right-radius: 2px;
-        }
-
-        .wa-bubble .bubble-name {
-            font-size: 11px;
-            color: #06cf9c;
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
-
-        .wa-bubble .bubble-time {
-            font-size: 10px;
-            color: rgba(255,255,255,0.45);
-            text-align: right;
-            margin-top: 3px;
-        }
-
-        .wa-bubble .bubble-status {
-            font-size: 10px;
-            color: #4fc3f7;
-            text-align: right;
-        }
-
-        /* INFO ROWS */
+        /* INFO */
         .info-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.04);
-            font-size: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 11px;
         }
-        .info-row .key { color: var(--text2); font-size: 10px; text-transform: uppercase; }
-        .info-row .val { color: var(--text); font-weight: 600; text-align: right; word-break: break-word; }
-        .info-row .val.green { color: var(--green); font-size: 15px; }
+        .info-row .key { color: var(--text2); font-size: 9px; text-transform: uppercase; }
+        .info-row .val { color: var(--text); font-weight: 600; text-align: right; }
+        .info-row .val.green { color: var(--green); font-size: 14px; }
 
-        /* RESPONSE STATUS */
-        .response-status {
-            padding: 8px 12px;
-            border-radius: var(--radius-sm);
-            margin-top: 8px;
-            font-size: 11px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        /* STATUS BOX */
+        .status-box {
+            padding: 8px 10px; border-radius: 6px; margin-top: 8px;
+            font-size: 10px; display: flex; align-items: center; gap: 6px;
         }
-        .response-status.responded { background: #1a3a2a; color: #28a745; border: 1px solid #28a745; }
-        .response-status.pending { background: #3a351b; color: var(--yellow); border: 1px solid var(--yellow); }
-        .response-status.no-response { background: #3a1a1a; color: var(--red); border: 1px solid var(--red); }
+        .status-box.responded { background: #1a3a2a; color: #28a745; border: 1px solid #28a745; }
+        .status-box.noresp { background: #3a1a1a; color: var(--red); border: 1px solid var(--red); }
+        .status-box.pending { background: #3a351b; color: var(--yellow); border: 1px solid var(--yellow); }
+        .status-box.idle { background: #1a1a1a; color: #888; border: 1px solid #444; }
 
         /* TOAST */
-        .toast-container {
-            position: fixed;
-            top: 60px;
-            right: 20px;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
+        .toast-container { position: fixed; top: 55px; right: 15px; z-index: 9999; display: flex; flex-direction: column; gap: 5px; }
         .toast {
-            background: var(--surface2);
-            color: white;
-            padding: 10px 18px;
-            border-radius: 10px;
-            font-size: 12px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
-            border-left: 4px solid var(--green);
-            animation: slideIn 0.3s ease;
-            max-width: 320px;
+            background: var(--surface2); color: white; padding: 8px 14px;
+            border-radius: 8px; font-size: 11px; box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+            border-left: 3px solid var(--green); animation: slideIn 0.3s ease; max-width: 300px;
         }
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        /* CHECKBOX */
-        .checkbox-inline {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            font-size: 11px;
-            margin-bottom: 4px;
-        }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     </style>
 </head>
 <body>
@@ -439,107 +302,102 @@
 <div class="topbar">
     <div class="topbar-left">
         <span class="topbar-logo">⚡</span>
-        <span class="topbar-title">Agente de Mensagens</span>
-        <span class="topbar-badge">v9.0</span>
+        <span class="topbar-title">Agente V9.1</span>
+        <span class="topbar-badge">STATUS MANUAL</span>
     </div>
     <div class="topbar-right">
-        <div class="status-pill">
-            <div class="status-dot online" id="globalStatusDot"></div>
-            <span id="globalStatusText">Sistema Ativo</span>
+        <div class="status-indicator">
+            <div class="status-dot idle" id="globalDot"></div>
+            <span id="globalStatus">Pronto</span>
         </div>
     </div>
 </div>
 
-<!-- MAIN GRID ASSIMÉTRICO -->
+<!-- GRID -->
 <div class="main-grid">
     
-    <!-- COLUNA 1: INPUTS + TELEFONES -->
+    <!-- COLUNA ESQUERDA: INPUTS -->
     <div class="card col-inputs">
-        <div class="card-header">
-            📋 Dados do Cliente
-            <span class="badge-count" id="badgeTelefones">0</span>
-        </div>
+        <div class="card-header">📋 DADOS DO CLIENTE</div>
         <div class="card-body">
             <div class="input-group">
                 <label>📋 Cole o texto</label>
-                <textarea id="fonte" placeholder="Cole os dados do cliente aqui...&#10;Nome: João Silva&#10;Contrato: 12345&#10;Endereço: Rua das Flores, 123&#10;Bairro: Centro&#10;Cidade: São Paulo - SP&#10;Telefone: (11) 91234-5678" oninput="processarTexto()"></textarea>
+                <textarea id="fonte" placeholder="Cole aqui os dados do cliente..." oninput="processarTexto()"></textarea>
             </div>
             
             <div class="input-group">
-                <label>📱 NÚMERO (EDITÁVEL - Digite ou selecione)</label>
-                <div class="phone-input-wrapper">
-                    <input type="tel" id="telefoneInput" placeholder="(11) 91234-5678 - Digite ou selecione abaixo" oninput="onTelefoneEditado()">
-                    <button class="btn btn-send btn-sm" onclick="disparoDireto()" title="Disparo direto">
+                <label>📱 TELEFONE (EDITÁVEL - Digite ou selecione)</label>
+                <div class="phone-row">
+                    <input type="tel" id="telefoneInput" placeholder="(11) 91234-5678" oninput="onTelefoneEditado()">
+                    <button class="btn btn-send btn-sm" onclick="disparoDireto()" title="Disparo direto sem selecionar chip">
                         ⚡ DIRETO
                     </button>
                 </div>
                 <div class="phone-chips" id="phoneChips">
-                    <span style="color:var(--text2);font-size:10px;">Telefones detectados aparecerão aqui</span>
+                    <span style="color:var(--text2);font-size:9px;">Detectados do texto ou digite acima</span>
                 </div>
             </div>
             
             <div class="input-group">
                 <label>⚙️ OPÇÕES</label>
-                <label class="checkbox-inline">
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:10px;margin-bottom:3px;">
                     <input type="checkbox" id="incluirAgenda" checked onchange="gerarMensagem()"> 📅 Incluir agenda
                 </label>
-                <label class="checkbox-inline">
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:10px;margin-bottom:3px;">
                     <input type="checkbox" id="incluirLocalizacao" checked onchange="gerarMensagem()"> 📍 Incluir localização
                 </label>
-                <label class="checkbox-inline">
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:10px;">
                     <input type="checkbox" id="copiarClipboard" checked> 📋 Copiar ao enviar
                 </label>
             </div>
             
-            <button class="btn btn-wa" onclick="enviarMensagem()" id="btnEnviar">
+            <button class="btn btn-wa" onclick="enviarWhatsApp()">
                 💬 ENVIAR PARA WHATSAPP
             </button>
             
             <div class="btn-group">
-                <button class="btn btn-send" onclick="abrirWhatsAppWeb()">🌐 WhatsApp Web</button>
-                <button class="btn btn-copy" onclick="copiarMensagem()">📋 Copiar</button>
-                <button class="btn btn-danger btn-sm" onclick="limparTudo()">🗑️</button>
+                <button class="btn btn-outline btn-sm" onclick="copiarMensagem()" style="flex:1;">📋 Copiar</button>
+                <button class="btn btn-danger btn-sm" onclick="limparTudo()">🗑️ Limpar</button>
             </div>
         </div>
     </div>
     
-    <!-- COLUNA 2 TOPO: MAPA -->
+    <!-- COLUNA CENTRO-TOPO: MAPA -->
     <div class="card col-center-top">
         <div class="card-header">
-            🗺️ Mapa de Localização
-            <button class="btn btn-sm" style="background:var(--surface3);color:var(--text);" onclick="minhaLocalizacao()">🎯 Minha Localização</button>
+            🗺️ MAPA DE LOCALIZAÇÃO
+            <button class="btn btn-xs btn-outline" onclick="minhaLocalizacao()">🎯 Minha Local</button>
         </div>
         <div class="map-wrapper">
             <div id="map"></div>
             <div class="map-address-bar" id="mapAddress">📍 Aguardando endereço...</div>
             <div class="map-controls">
-                <button class="map-btn" onclick="centralizarEndereco()">📍 Ver endereço</button>
+                <button class="map-btn" onclick="centralizarEndereco()">📍 Endereço</button>
                 <button class="map-btn" onclick="abrirGoogleMaps()">🗺️ Google Maps</button>
-                <button class="map-btn" onclick="alternarTemaMapa()">🎨 Tema</button>
             </div>
         </div>
     </div>
     
-    <!-- COLUNA 2 BASE: WHATSAPP CHAT -->
+    <!-- COLUNA CENTRO-BASE: CHAT WHATSAPP -->
     <div class="card col-center-bottom">
         <div class="card-header">
-            💬 WhatsApp - Conversa em Tempo Real
-            <span class="badge-count" id="badgeMensagens">0</span>
+            💬 CONVERSA WHATSAPP (ESPELHO)
+            <span style="font-size:9px;color:var(--text2);">O status real é controlado manualmente</span>
         </div>
         <div class="wa-chat" id="waChat">
             <div class="wa-bubble received">
                 <div class="bubble-name">🤖 Sistema</div>
-                👋 Bem-vindo ao chat em tempo real!<br>
-                Cole os dados do cliente e envie a mensagem.<br>
-                As respostas aparecerão aqui automaticamente.
-                <div class="bubble-time">Agora</div>
+                👋 As mensagens enviadas aparecerão aqui.<br>
+                ⚠️ O status (respondido/não) é <strong>manual</strong>.<br>
+                Após enviar, verifique o WhatsApp e<br>clique no status correspondente.
+                <div class="bubble-time">---</div>
             </div>
         </div>
     </div>
     
-    <!-- COLUNA 3: INFORMAÇÕES + STATUS -->
+    <!-- COLUNA DIREITA: INFO + STATUS MANUAL -->
     <div class="card col-info">
-        <div class="card-header">📊 Status do Cliente</div>
+        <div class="card-header">📊 STATUS DO ATENDIMENTO</div>
         <div class="card-body">
             <div class="info-row"><span class="key">👤 Nome</span><span class="val" id="infoNome">-</span></div>
             <div class="info-row"><span class="key">📄 Contrato</span><span class="val" id="infoContrato">-</span></div>
@@ -547,30 +405,35 @@
             <div class="info-row"><span class="key">🏙️ Cidade/UF</span><span class="val green" id="infoCidade">-</span></div>
             <div class="info-row"><span class="key">📱 Telefone</span><span class="val green" id="infoTelefone">-</span></div>
             
-            <hr style="border-color:var(--border);margin:10px 0;">
+            <hr style="border-color:var(--border);margin:8px 0;">
             
             <div class="info-row"><span class="key">📊 Envios hoje</span><span class="val" id="infoEnvios">0</span></div>
             <div class="info-row"><span class="key">✅ Respondidos</span><span class="val" style="color:#28a745;" id="infoRespondidos">0</span></div>
-            <div class="info-row"><span class="key">⏳ Pendentes</span><span class="val" style="color:#ffc107;" id="infoPendentes">0</span></div>
+            <div class="info-row"><span class="key">❌ Não respondidos</span><span class="val" style="color:#dc3545;" id="infoNaoRespondidos">0</span></div>
             
-            <hr style="border-color:var(--border);margin:10px 0;">
+            <hr style="border-color:var(--border);margin:8px 0;">
             
-            <!-- STATUS DE RESPOSTA -->
-            <div id="responseStatusBox" class="response-status pending">
-                ⏳ <strong>Status:</strong> <span id="responseStatusText">Aguardando envio</span>
+            <!-- STATUS BOX MANUAL -->
+            <div class="status-box idle" id="statusBox">
+                <span id="statusIcon">💤</span>
+                <strong id="statusText">Nenhum envio ativo</strong>
             </div>
             
-            <div style="margin-top:10px;display:flex;gap:6px;">
-                <button class="btn btn-sm" style="background:#28a745;color:white;flex:1;" onclick="marcarComoRespondido()">
-                    ✅ Marcar Respondido
+            <div style="margin-top:8px;display:flex;flex-direction:column;gap:5px;">
+                <button class="btn btn-success btn-sm" onclick="marcarRespondido()" style="width:100%;">
+                    ✅ MARCAR COMO RESPONDIDO
                 </button>
-                <button class="btn btn-sm" style="background:#dc3545;color:white;flex:1;" onclick="marcarNaoRespondeu()">
-                    ❌ Não Respondeu
+                <button class="btn btn-sm" style="background:#dc3545;color:white;width:100%;" onclick="marcarNaoRespondeu()">
+                    ❌ MARCAR COMO NÃO RESPONDEU
+                </button>
+                <button class="btn btn-warning btn-sm" onclick="marcarPendente()" style="width:100%;">
+                    ⏳ MARCAR COMO PENDENTE
                 </button>
             </div>
-            <button class="btn btn-sm" style="background:#ffc107;color:#333;width:100%;margin-top:6px;" onclick="marcarPendente()">
-                ⏳ Pendente
-            </button>
+            
+            <div style="margin-top:8px;font-size:9px;color:var(--text2);text-align:center;">
+                ⚠️ Clique manualmente após verificar<br>a resposta real no WhatsApp
+            </div>
         </div>
     </div>
 </div>
@@ -580,21 +443,12 @@
 
 <script>
 // ============================================
-// VARIÁVEIS GLOBAIS
+// VARIÁVEIS
 // ============================================
 let map, marker;
-let currentLat = -23.5505;
-let currentLng = -46.6333;
-let currentAddress = '';
-let mapaTemaEscuro = true;
+let currentLat = -23.5505, currentLng = -46.6333, currentAddress = '';
 
-const DDDS_VALIDOS = new Set([
-    11,12,13,14,15,16,17,18,19,21,22,24,27,28,
-    31,32,33,34,35,37,38,41,42,43,44,45,46,47,48,49,
-    51,53,54,55,61,62,63,64,65,66,67,68,69,
-    71,73,74,75,77,79,81,82,83,84,85,86,87,88,89,
-    91,92,93,94,95,96,97,98,99
-]);
+const DDDS_VALIDOS = new Set([11,12,13,14,15,16,17,18,19,21,22,24,27,28,31,32,33,34,35,37,38,41,42,43,44,45,46,47,48,49,51,53,54,55,61,62,63,64,65,66,67,68,69,71,73,74,75,77,79,81,82,83,84,85,86,87,88,89,91,92,93,94,95,96,97,98,99]);
 
 let dadosAtuais = {
     numero: '', contrato: 'N/A', nome: 'NÃO IDENTIFICADO',
@@ -602,200 +456,91 @@ let dadosAtuais = {
     cidade: '', estado: '', mensagem: '', telefonesDisponiveis: []
 };
 
-let statusCliente = 'pendente'; // pendente | respondido | nao_respondeu
-let contadorMensagens = 0;
+let statusAtendimento = 'idle'; // idle | pending | responded | noresp
+let ultimoEnvioTimestamp = 0;
 
 // ============================================
 // MAPA (LEAFLET)
 // ============================================
 function initMap() {
-    map = L.map('map', {
-        center: [currentLat, currentLng],
-        zoom: 15,
-        zoomControl: true,
-        attributionControl: false
-    });
-
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        subdomains: ['a','b','c','d']
-    }).addTo(map);
-
-    marker = L.marker([currentLat, currentLng], { 
-        draggable: true,
-        title: 'Arraste para ajustar'
-    }).addTo(map);
-
+    map = L.map('map', { center: [currentLat, currentLng], zoom: 15, zoomControl: true, attributionControl: false });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+    marker = L.marker([currentLat, currentLng], { draggable: true }).addTo(map);
     marker.bindPopup('📍 Localização').openPopup();
-
-    marker.on('dragend', function(e) {
-        const pos = marker.getLatLng();
-        currentLat = pos.lat;
-        currentLng = pos.lng;
-        reverseGeocode(pos.lat, pos.lng);
-    });
-
-    map.on('click', function(e) {
-        marker.setLatLng(e.latlng);
-        currentLat = e.latlng.lat;
-        currentLng = e.latlng.lng;
-        reverseGeocode(e.latlng.lat, e.latlng.lng);
-    });
-
-    // Ajustar mapa quando a janela redimensionar
-    window.addEventListener('resize', () => {
-        setTimeout(() => map.invalidateSize(), 200);
-    });
+    
+    marker.on('dragend', e => { currentLat = e.target.getLatLng().lat; currentLng = e.target.getLatLng().lng; reverseGeocode(currentLat, currentLng); });
+    map.on('click', e => { marker.setLatLng(e.latlng); currentLat = e.latlng.lat; currentLng = e.latlng.lng; reverseGeocode(currentLat, currentLng); });
+    window.addEventListener('resize', () => setTimeout(() => map.invalidateSize(), 200));
 }
 
 function reverseGeocode(lat, lng) {
     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`)
-        .then(res => res.json())
-        .then(data => {
-            currentAddress = data.display_name;
-            const addr = data.address;
-            const cidade = addr.city || addr.town || addr.municipality || '';
-            
-            document.getElementById('mapAddress').innerHTML = 
-                `📍 ${currentAddress.substring(0, 90)}...`;
-            
-            if (cidade) {
-                const estadoSigla = converterEstado(addr.state || '');
-                document.getElementById('infoCidade').textContent = 
-                    `${cidade}${estadoSigla ? '/' + estadoSigla : ''}`;
-            }
-        })
-        .catch(() => {
-            document.getElementById('mapAddress').innerHTML = 
-                `📍 Coordenadas: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-        });
+        .then(r => r.json()).then(d => {
+            currentAddress = d.display_name;
+            document.getElementById('mapAddress').innerHTML = `📍 ${currentAddress.substring(0, 80)}...`;
+            const cid = d.address?.city || d.address?.town || '';
+            if (cid) document.getElementById('infoCidade').textContent = `${cid}${d.address?.state ? '/' + converterEstado(d.address.state) : ''}`;
+        }).catch(() => document.getElementById('mapAddress').innerHTML = `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
 }
 
 function geocodeAddress(endereco) {
     if (!endereco || endereco === 'NÃO INFORMADO') return;
-    
     fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco + ', Brasil')}&limit=1`)
-        .then(res => res.json())
-        .then(data => {
-            if (data?.[0]) {
-                currentLat = parseFloat(data[0].lat);
-                currentLng = parseFloat(data[0].lon);
-                map.setView([currentLat, currentLng], 16);
-                marker.setLatLng([currentLat, currentLng]);
-                currentAddress = data[0].display_name;
-                document.getElementById('mapAddress').innerHTML = `📍 ${currentAddress.substring(0, 90)}...`;
+        .then(r => r.json()).then(d => {
+            if (d?.[0]) {
+                currentLat = parseFloat(d[0].lat); currentLng = parseFloat(d[0].lon);
+                map.setView([currentLat, currentLng], 16); marker.setLatLng([currentLat, currentLng]);
+                currentAddress = d[0].display_name;
+                document.getElementById('mapAddress').innerHTML = `📍 ${currentAddress.substring(0, 80)}...`;
             }
         });
 }
 
-function centralizarEndereco() {
-    if (dadosAtuais.endereco !== 'NÃO INFORMADO') {
-        geocodeAddress(dadosAtuais.endereco + (dadosAtuais.cidade ? ', ' + dadosAtuais.cidade : ''));
-    } else {
-        mostrarToast('⚠️ Nenhum endereço carregado');
-    }
-}
-
+function centralizarEndereco() { if (dadosAtuais.endereco !== 'NÃO INFORMADO') geocodeAddress(dadosAtuais.endereco + (dadosAtuais.cidade ? ', ' + dadosAtuais.cidade : '')); }
 function minhaLocalizacao() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(pos => {
-            currentLat = pos.coords.latitude;
-            currentLng = pos.coords.longitude;
-            map.setView([currentLat, currentLng], 17);
-            marker.setLatLng([currentLat, currentLng]);
-            reverseGeocode(currentLat, currentLng);
-            mostrarToast('✅ Localização encontrada!');
-        }, () => mostrarToast('❌ Erro ao obter localização'));
-    }
+    navigator.geolocation?.getCurrentPosition(p => {
+        currentLat = p.coords.latitude; currentLng = p.coords.longitude;
+        map.setView([currentLat, currentLng], 17); marker.setLatLng([currentLat, currentLng]);
+        reverseGeocode(currentLat, currentLng);
+    });
 }
-
-function abrirGoogleMaps() {
-    window.open(`https://www.google.com/maps?q=${currentLat},${currentLng}`, '_blank');
-}
-
-function alternarTemaMapa() {
-    mapaTemaEscuro = !mapaTemaEscuro;
-    map.eachLayer(layer => { if (layer instanceof L.TileLayer) map.removeLayer(layer); });
-    
-    const url = mapaTemaEscuro 
-        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-        : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-    
-    L.tileLayer(url, { maxZoom: 19 }).addTo(map);
-    mostrarToast(mapaTemaEscuro ? '🎨 Tema escuro' : '🎨 Tema claro');
-}
-
-function converterEstado(nome) {
-    const estados = {
-        'acre':'AC','alagoas':'AL','amapá':'AP','amazonas':'AM','bahia':'BA',
-        'ceará':'CE','distrito federal':'DF','espírito santo':'ES','goiás':'GO',
-        'maranhão':'MA','mato grosso':'MT','mato grosso do sul':'MS','minas gerais':'MG',
-        'pará':'PA','paraíba':'PB','paraná':'PR','pernambuco':'PE','piauí':'PI',
-        'rio de janeiro':'RJ','rio grande do norte':'RN','rio grande do sul':'RS',
-        'rondônia':'RO','roraima':'RR','santa catarina':'SC','são paulo':'SP',
-        'sergipe':'SE','tocantins':'TO'
-    };
-    return estados[nome?.toLowerCase()] || nome?.substring(0,2)?.toUpperCase() || '';
-}
+function abrirGoogleMaps() { window.open(`https://www.google.com/maps?q=${currentLat},${currentLng}`, '_blank'); }
+function converterEstado(n) { const e={acre:'AC',alagoas:'AL',amapá:'AP',amazonas:'AM',bahia:'BA',ceará:'CE','distrito federal':'DF','espírito santo':'ES',goiás:'GO',maranhão:'MA','mato grosso':'MT','mato grosso do sul':'MS','minas gerais':'MG',pará:'PA',paraíba:'PB',paraná:'PR',pernambuco:'PE',piauí:'PI','rio de janeiro':'RJ','rio grande do norte':'RN','rio grande do sul':'RS',rondônia:'RO',roraima:'RR','santa catarina':'SC','são paulo':'SP',sergipe:'SE',tocantins:'TO'}; return e[n?.toLowerCase()] || n?.substring(0,2)?.toUpperCase() || ''; }
 
 // ============================================
 // VALIDAÇÃO DE TELEFONE
 // ============================================
-function validarTelefone(numero) {
-    const limpo = numero.replace(/\D/g, '');
-    if (limpo.length !== 10 && limpo.length !== 11) return { valido: false, motivo: '10 ou 11 dígitos necessários' };
-    const ddd = parseInt(limpo.substring(0, 2));
-    if (!DDDS_VALIDOS.has(ddd)) return { valido: false, motivo: `DDD ${ddd} inválido` };
+function validarTelefone(n) {
+    const l = n.replace(/\D/g, '');
+    if (l.length !== 10 && l.length !== 11) return { valido: false, motivo: '10 ou 11 dígitos' };
+    if (!DDDS_VALIDOS.has(parseInt(l.substring(0,2)))) return { valido: false, motivo: 'DDD inválido' };
     return { valido: true };
 }
-
-function formatarTelefone(numero) {
-    if (!numero) return '';
-    const n = numero.toString();
+function formatarTelefone(n) {
+    if (!n) return '';
     if (n.length === 11) return `(${n.substring(0,2)}) ${n.substring(2,3)} ${n.substring(3,7)}-${n.substring(7)}`;
     if (n.length === 10) return `(${n.substring(0,2)}) ${n.substring(2,6)}-${n.substring(6)}`;
-    return numero;
+    return n;
 }
 
 // ============================================
-// TELEFONE EDITÁVEL + CHIPS
+// TELEFONE EDITÁVEL
 // ============================================
 function onTelefoneEditado() {
-    const input = document.getElementById('telefoneInput');
-    const valor = input.value.replace(/\D/g, '');
-    
-    // Formatar enquanto digita
-    if (valor.length > 0) {
-        let formatado = valor;
-        if (valor.length <= 2) formatado = `(${valor}`;
-        else if (valor.length <= 3) formatado = `(${valor.substring(0,2)}) ${valor.substring(2)}`;
-        else if (valor.length <= 7) formatado = `(${valor.substring(0,2)}) ${valor.substring(2,3)} ${valor.substring(3)}`;
-        else if (valor.length <= 11) formatado = `(${valor.substring(0,2)}) ${valor.substring(2,3)} ${valor.substring(3,7)}-${valor.substring(7)}`;
-        
-        // Atualizar sem perder posição do cursor
-        const cursorPos = input.selectionStart;
-        input.value = formatado;
-        
-        // Tentar manter posição do cursor
-        const diff = formatado.length - valor.length;
-        input.setSelectionRange(cursorPos + diff, cursorPos + diff);
-    }
-    
-    // Validar e atualizar
-    const valid = validarTelefone(valor);
-    if (valid.valido && valor.length >= 10) {
-        dadosAtuais.numero = valor.length === 10 ? valor.substring(0,2) + '9' + valor.substring(2) : valor;
-        document.getElementById('infoTelefone').textContent = formatarTelefone(dadosAtuais.numero);
-        gerarMensagem();
-        atualizarBadgeTelefones();
+    const val = document.getElementById('telefoneInput').value.replace(/\D/g, '');
+    if (val.length >= 10) {
+        const v = validarTelefone(val);
+        if (v.valido) {
+            dadosAtuais.numero = val.length === 10 ? val.substring(0,2) + '9' + val.substring(2) : val;
+            document.getElementById('infoTelefone').textContent = formatarTelefone(dadosAtuais.numero);
+            gerarMensagem();
+        }
     }
 }
 
 function selecionarTelefone(tel) {
     document.querySelectorAll('.phone-chip').forEach(c => c.classList.remove('selected'));
-    const chip = document.querySelector(`.phone-chip[data-tel="${tel}"]`);
-    if (chip) chip.classList.add('selected');
-    
+    document.querySelector(`.phone-chip[data-tel="${tel}"]`)?.classList.add('selected');
     dadosAtuais.numero = tel;
     document.getElementById('telefoneInput').value = formatarTelefone(tel);
     document.getElementById('infoTelefone').textContent = formatarTelefone(tel);
@@ -803,470 +548,267 @@ function selecionarTelefone(tel) {
 }
 
 function disparoDireto() {
-    const inputTel = document.getElementById('telefoneInput').value.replace(/\D/g, '');
-    const valid = validarTelefone(inputTel);
-    
-    if (!valid.valido) {
-        mostrarToast(`❌ ${valid.motivo}`);
-        return;
-    }
-    
-    dadosAtuais.numero = inputTel.length === 10 ? inputTel.substring(0,2) + '9' + inputTel.substring(2) : inputTel;
+    const tel = document.getElementById('telefoneInput').value.replace(/\D/g, '');
+    const v = validarTelefone(tel);
+    if (!v.valido) { mostrarToast(`❌ ${v.motivo}`); return; }
+    dadosAtuais.numero = tel.length === 10 ? tel.substring(0,2) + '9' + tel.substring(2) : tel;
     document.getElementById('infoTelefone').textContent = formatarTelefone(dadosAtuais.numero);
     gerarMensagem();
-    enviarMensagem();
+    enviarWhatsApp();
 }
 
 // ============================================
-// PROCESSAMENTO DE TEXTO
+// PROCESSAMENTO
 // ============================================
-function extrairCidadeEstado(endereco) {
-    if (!endereco || endereco === "NÃO INFORMADO") return { cidade: '', estado: '' };
-    const padroes = [/(\w[\w\s]+?)\s*[-–]\s*([A-Z]{2})/i, /(\w[\w\s]+?)\s*,\s*([A-Z]{2})/i];
-    for (const regex of padroes) {
-        const match = endereco.match(regex);
-        if (match) return { cidade: match[1].trim(), estado: match[2].toUpperCase() };
+function extrairCidadeEstado(e) {
+    if (!e || e === "NÃO INFORMADO") return { cidade: '', estado: '' };
+    for (const r of [/(\w[\w\s]+?)\s*[-–]\s*([A-Z]{2})/i, /(\w[\w\s]+?)\s*,\s*([A-Z]{2})/i]) {
+        const m = e.match(r); if (m) return { cidade: m[1].trim(), estado: m[2].toUpperCase() };
     }
     return { cidade: '', estado: '' };
 }
 
 function processarTexto() {
-    const texto = document.getElementById("fonte").value;
-    if (!texto || texto.length < 5) return;
+    const t = document.getElementById("fonte").value;
+    if (!t || t.length < 5) return;
     
-    const telefones = [];
-    const regexTel = /\((\d{2,3})\)\s*(\d)?\s*(\d{4,5})-(\d{4})/g;
-    let match;
-    
-    while ((match = regexTel.exec(texto)) !== null) {
-        let numero = (match[1] + (match[2] || '') + match[3] + match[4]).replace(/\D/g, '');
-        if (validarTelefone(numero).valido) {
-            if (numero.length === 10) numero = numero.substring(0, 2) + '9' + numero.substring(2);
-            if (!telefones.includes(numero)) telefones.push(numero);
-        }
+    const tels = [];
+    for (const m of t.matchAll(/\((\d{2,3})\)\s*(\d)?\s*(\d{4,5})-(\d{4})/g)) {
+        let n = (m[1] + (m[2] || '') + m[3] + m[4]).replace(/\D/g, '');
+        if (validarTelefone(n).valido) { if (n.length === 10) n = n.substring(0,2) + '9' + n.substring(2); if (!tels.includes(n)) tels.push(n); }
     }
     
-    const nome = texto.match(/Nome:\s*([^\n]+)/i)?.[1]?.trim() || "NÃO IDENTIFICADO";
-    const contrato = texto.match(/Contrato:\s*([^\n]+)/i)?.[1]?.trim() || "N/A";
-    const enderecoMatch = texto.match(/Endere[çc]o:\s*([^]+?)(?=Bairro:|Cep:|Cidade:|Estado:|Telefone|$)/i);
-    const endereco = enderecoMatch ? enderecoMatch[1].replace(/\s+/g, ' ').trim() : "NÃO INFORMADO";
-    const bairro = texto.match(/Bairro:\s*([^\n]+)/i)?.[1]?.trim() || "NÃO INFORMADO";
-    const cidadeMatch = texto.match(/Cidade:\s*([^\n]+)/i)?.[1]?.trim() || '';
-    const estadoMatch = texto.match(/Estado:\s*([^\n]+)/i)?.[1]?.trim() || '';
+    const nome = t.match(/Nome:\s*([^\n]+)/i)?.[1]?.trim() || "NÃO IDENTIFICADO";
+    const contrato = t.match(/Contrato:\s*([^\n]+)/i)?.[1]?.trim() || "N/A";
+    const endM = t.match(/Endere[çc]o:\s*([^]+?)(?=Bairro:|Cep:|Cidade:|Estado:|Telefone|$)/i);
+    const endereco = endM ? endM[1].replace(/\s+/g, ' ').trim() : "NÃO INFORMADO";
+    const bairro = t.match(/Bairro:\s*([^\n]+)/i)?.[1]?.trim() || "NÃO INFORMADO";
+    let cidade = t.match(/Cidade:\s*([^\n]+)/i)?.[1]?.trim() || '';
+    let estado = t.match(/Estado:\s*([^\n]+)/i)?.[1]?.trim() || '';
+    if (!cidade) { const x = extrairCidadeEstado(endereco); cidade = x.cidade; estado = x.estado; }
     
-    let cidade = cidadeMatch, estado = estadoMatch;
-    if (!cidade) { const ext = extrairCidadeEstado(endereco); cidade = ext.cidade; estado = ext.estado; }
+    dadosAtuais = { ...dadosAtuais, nome, contrato, endereco, bairro, cidade, estado, telefonesDisponiveis: tels };
     
-    dadosAtuais = { ...dadosAtuais, nome, contrato, endereco, bairro, cidade, estado, telefonesDisponiveis: telefones };
-    
-    // Atualizar UI
     document.getElementById('infoNome').textContent = nome;
     document.getElementById('infoContrato').textContent = contrato;
-    document.getElementById('infoEndereco').textContent = endereco.substring(0, 45) + (endereco.length > 45 ? '...' : '');
+    document.getElementById('infoEndereco').textContent = endereco.substring(0, 40) + (endereco.length > 40 ? '...' : '');
     document.getElementById('infoCidade').textContent = cidade ? `${cidade}${estado ? '/' + estado : ''}` : '-';
     
-    // Chips de telefone
-    const chipsContainer = document.getElementById('phoneChips');
-    chipsContainer.innerHTML = '';
-    
-    if (telefones.length > 0) {
-        telefones.forEach((tel, idx) => {
-            const chip = document.createElement('span');
-            chip.className = 'phone-chip';
-            chip.textContent = `${idx + 1}. ${formatarTelefone(tel)}`;
-            chip.onclick = () => selecionarTelefone(tel);
-            chip.setAttribute('data-tel', tel);
-            chipsContainer.appendChild(chip);
+    const cc = document.getElementById('phoneChips'); cc.innerHTML = '';
+    if (tels.length) {
+        tels.forEach((tel, i) => {
+            const c = document.createElement('span'); c.className = 'phone-chip';
+            c.textContent = `${i+1}. ${formatarTelefone(tel)}`; c.onclick = () => selecionarTelefone(tel);
+            c.setAttribute('data-tel', tel); cc.appendChild(c);
         });
-        selecionarTelefone(telefones[0]);
+        selecionarTelefone(tels[0]);
     } else {
-        chipsContainer.innerHTML = '<span style="color:var(--text2);font-size:10px;">Nenhum telefone detectado - digite manualmente</span>';
+        cc.innerHTML = '<span style="color:var(--text2);font-size:9px;">Digite o telefone manualmente</span>';
     }
     
-    atualizarBadgeTelefones();
-    
-    if (endereco !== 'NÃO INFORMADO') {
-        geocodeAddress(endereco + (cidade ? ', ' + cidade : ''));
-    }
-    
+    if (endereco !== 'NÃO INFORMADO') geocodeAddress(endereco + (cidade ? ', ' + cidade : ''));
     gerarMensagem();
     atualizarContadores();
 }
 
-function atualizarBadgeTelefones() {
-    const total = dadosAtuais.telefonesDisponiveis.length || (dadosAtuais.numero ? 1 : 0);
-    document.getElementById('badgeTelefones').textContent = total;
-}
-
 // ============================================
-// GERAÇÃO DE MENSAGEM
+// MENSAGEM
 // ============================================
 function gerarMensagem() {
-    const hora = new Date().getHours();
-    const saudacao = hora >= 5 && hora < 12 ? "Bom dia" : (hora >= 12 && hora < 18 ? "Boa tarde" : "Boa noite");
-    
-    let msg = `${saudacao}! Como você está? 😊\n\n`;
-    msg += `Aqui quem fala é a equipe de atendimento.\n\n`;
-    msg += `📋 *Dados:*\n• Nome: ${dadosAtuais.nome}\n• Contrato: ${dadosAtuais.contrato}\n• Endereço: ${dadosAtuais.endereco}\n`;
-    if (dadosAtuais.cidade) msg += `• Cidade/UF: ${dadosAtuais.cidade}${dadosAtuais.estado ? '/' + dadosAtuais.estado : ''}\n`;
-    if (document.getElementById('incluirAgenda')?.checked) msg += `\n📅 Conseguimos um horário hoje! 🗓️\n`;
-    if (document.getElementById('incluirLocalizacao')?.checked && dadosAtuais.endereco !== "NÃO INFORMADO") {
-        msg += `\n📍 ${dadosAtuais.endereco}\n🗺️ https://www.google.com/maps?q=${encodeURIComponent(dadosAtuais.endereco)}\n`;
-    }
-    msg += `\n✨ Confirme respondendo esta mensagem!\nTenha um excelente ${hora < 12 ? 'dia' : (hora < 18 ? 'tarde' : 'noite')}! ❤️`;
-    
-    dadosAtuais.mensagem = msg;
-    return msg;
+    const h = new Date().getHours();
+    const s = h >= 5 && h < 12 ? "Bom dia" : (h >= 12 && h < 18 ? "Boa tarde" : "Boa noite");
+    let m = `${s}! Como você está? 😊\n\nAqui quem fala é a equipe de atendimento.\n\n📋 *Dados:*\n• Nome: ${dadosAtuais.nome}\n• Contrato: ${dadosAtuais.contrato}\n• Endereço: ${dadosAtuais.endereco}\n`;
+    if (dadosAtuais.cidade) m += `• Cidade/UF: ${dadosAtuais.cidade}${dadosAtuais.estado ? '/' + dadosAtuais.estado : ''}\n`;
+    if (document.getElementById('incluirAgenda')?.checked) m += `\n📅 Conseguimos um horário hoje! 🗓️\n`;
+    if (document.getElementById('incluirLocalizacao')?.checked && dadosAtuais.endereco !== "NÃO INFORMADO") m += `\n📍 ${dadosAtuais.endereco}\n🗺️ https://www.google.com/maps?q=${encodeURIComponent(dadosAtuais.endereco)}\n`;
+    m += `\n✨ Confirme respondendo esta mensagem!\nTenha um excelente ${h < 12 ? 'dia' : (h < 18 ? 'tarde' : 'noite')}! ❤️`;
+    dadosAtuais.mensagem = m;
+    return m;
 }
 
 // ============================================
-// ENVIO + WHATSAPP WEB
+// ENVIO WHATSAPP (SEM SIMULAÇÃO AUTOMÁTICA)
 // ============================================
-function enviarMensagem() {
-    if (!dadosAtuais.numero) {
-        mostrarToast('❌ Informe um telefone!');
-        return;
-    }
+function enviarWhatsApp() {
+    if (!dadosAtuais.numero) { mostrarToast('❌ Informe um telefone!'); return; }
     if (!dadosAtuais.mensagem) gerarMensagem();
     
-    // Adicionar ao chat
-    adicionarBubbleChat('sent', dadosAtuais.mensagem);
-    contadorMensagens++;
-    document.getElementById('badgeMensagens').textContent = contadorMensagens;
+    // Adicionar ao chat espelho
+    adicionarBubble('sent', dadosAtuais.mensagem);
     
     // Copiar se configurado
-    if (document.getElementById('copiarClipboard').checked) {
-        navigator.clipboard.writeText(dadosAtuais.mensagem).catch(() => {});
-    }
+    if (document.getElementById('copiarClipboard').checked) navigator.clipboard.writeText(dadosAtuais.mensagem).catch(() => {});
     
-    // Atualizar status
-    statusCliente = 'pendente';
-    atualizarStatusResponse();
+    // Marcar como pendente (AGUARDANDO RESPOSTA REAL)
+    statusAtendimento = 'pending';
+    atualizarStatusBox();
+    atualizarGlobalStatus();
     
     // Abrir WhatsApp Web
-    abrirWhatsAppWeb();
+    const num = dadosAtuais.numero.replace(/\D/g, '');
+    const numF = num.length === 10 ? num.substring(0,2) + '9' + num.substring(2) : num;
+    window.open(`https://web.whatsapp.com/send?phone=55${numF}&text=${encodeURIComponent(dadosAtuais.mensagem)}`, 'WAWeb', `width=1000,height=700,left=${(screen.width-1000)/2},top=${(screen.height-700)/2}`);
     
-    // Salvar histórico
-    salvarHistorico();
+    ultimoEnvioTimestamp = Date.now();
+    salvarHistorico('pending');
     atualizarContadores();
-    
-    // Simular verificação de resposta em tempo real
-    iniciarVerificacaoResposta();
-    
-    mostrarToast('💬 Mensagem enviada! Monitorando resposta...');
-    document.getElementById('globalStatusDot').className = 'status-dot responding';
-    document.getElementById('globalStatusText').textContent = 'Aguardando resposta...';
+    mostrarToast('💬 WhatsApp Web aberto! Aguarde a resposta real e clique no status.');
 }
 
-function adicionarBubbleChat(tipo, mensagem) {
+function adicionarBubble(tipo, msg) {
     const chat = document.getElementById('waChat');
     const hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    
-    const bubble = document.createElement('div');
-    bubble.className = `wa-bubble ${tipo}`;
-    
-    if (tipo === 'received') {
-        bubble.innerHTML = `
-            <div class="bubble-name">👤 ${dadosAtuais.nome !== 'NÃO IDENTIFICADO' ? dadosAtuais.nome : 'Cliente'}</div>
-            ${mensagem.replace(/\n/g, '<br>')}
-            <div class="bubble-time">${hora}</div>
-        `;
-    } else {
-        bubble.innerHTML = `
-            ${mensagem.replace(/\n/g, '<br>')}
-            <div class="bubble-time">${hora} ✔️</div>
-        `;
-    }
-    
-    chat.appendChild(bubble);
-    chat.scrollTop = chat.scrollHeight;
-    
-    // Limitar número de bolhas visíveis
-    const bubbles = chat.querySelectorAll('.wa-bubble');
-    if (bubbles.length > 50) bubbles[0].remove();
-}
-
-function abrirWhatsAppWeb() {
-    if (!dadosAtuais.numero) return;
-    
-    const numero = dadosAtuais.numero.replace(/\D/g, '');
-    let numeroFormatado = numero;
-    if (numeroFormatado.length === 10) numeroFormatado = numeroFormatado.substring(0, 2) + '9' + numeroFormatado.substring(2);
-    
-    const msg = dadosAtuais.mensagem || '';
-    const waUrl = `https://web.whatsapp.com/send?phone=55${numeroFormatado}&text=${encodeURIComponent(msg)}`;
-    
-    window.open(waUrl, 'WhatsAppWeb', 
-        `width=1000,height=700,left=${(screen.width-1000)/2},top=${(screen.height-700)/2}`);
-}
-
-function copiarMensagem() {
-    if (!dadosAtuais.mensagem) gerarMensagem();
-    navigator.clipboard.writeText(dadosAtuais.mensagem).then(() => mostrarToast('📋 Copiado!'));
+    const b = document.createElement('div'); b.className = `wa-bubble ${tipo}`;
+    b.innerHTML = tipo === 'sent' ? `${msg.replace(/\n/g, '<br>')}<div class="bubble-time">${hora} ✔️</div>` : `<div class="bubble-name">👤 ${dadosAtuais.nome !== 'NÃO IDENTIFICADO' ? dadosAtuais.nome : 'Cliente'}</div>${msg.replace(/\n/g, '<br>')}<div class="bubble-time">${hora}</div>`;
+    chat.appendChild(b); chat.scrollTop = chat.scrollHeight;
+    if (chat.querySelectorAll('.wa-bubble').length > 50) chat.querySelector('.wa-bubble').remove();
 }
 
 // ============================================
-// SISTEMA DE RESPOSTA EM TEMPO REAL (SIMULADO)
+// STATUS MANUAL (CONTROLADO PELO USUÁRIO)
 // ============================================
-let verificacaoTimer = null;
-let tentativasVerificacao = 0;
-
-function iniciarVerificacaoResposta() {
-    // Limpar timer anterior
-    if (verificacaoTimer) clearInterval(verificacaoTimer);
-    tentativasVerificacao = 0;
+function marcarRespondido() {
+    if (statusAtendimento === 'idle') { mostrarToast('⚠️ Nenhum envio ativo para marcar'); return; }
     
-    // Simular verificação a cada 10 segundos (5 tentativas = 50 segundos)
-    verificacaoTimer = setInterval(() => {
-        tentativasVerificacao++;
-        
-        // Simulação: 30% de chance de resposta a cada verificação
-        const respondeu = Math.random() < 0.3;
-        
-        if (respondeu && statusCliente === 'pendente') {
-            // Cliente respondeu!
-            const respostasSimuladas = [
-                "Sim, confirmado! ✅",
-                "Ok, pode me passar o horário?",
-                "Confirmo sim, obrigado!",
-                "Pode ser hoje às 14h",
-                "Estarei presente!"
-            ];
-            const resposta = respostasSimuladas[Math.floor(Math.random() * respostasSimuladas.length)];
-            
-            adicionarBubbleChat('received', resposta);
-            contadorMensagens++;
-            document.getElementById('badgeMensagens').textContent = contadorMensagens;
-            
-            marcarComoRespondido();
-            clearInterval(verificacaoTimer);
-            verificacaoTimer = null;
-            
-            mostrarToast('✅ Cliente respondeu! Marcado como respondido.');
-            document.getElementById('globalStatusDot').className = 'status-dot online';
-            document.getElementById('globalStatusText').textContent = '✅ Cliente respondeu!';
-        }
-        
-        if (tentativasVerificacao >= 10) {
-            // Parar verificação após 10 tentativas
-            clearInterval(verificacaoTimer);
-            verificacaoTimer = null;
-            
-            if (statusCliente === 'pendente') {
-                document.getElementById('globalStatusDot').className = 'status-dot offline';
-                document.getElementById('globalStatusText').textContent = 'Verificação encerrada';
-            }
-        }
-    }, 10000); // A cada 10 segundos
-}
-
-function marcarComoRespondido() {
-    statusCliente = 'respondido';
-    atualizarStatusResponse();
-    salvarStatusCliente();
-    
-    if (verificacaoTimer) {
-        clearInterval(verificacaoTimer);
-        verificacaoTimer = null;
-    }
-    
+    statusAtendimento = 'responded';
+    atualizarStatusBox();
+    atualizarGlobalStatus();
     atualizarChipsStatus();
+    salvarHistorico('responded');
     atualizarContadores();
+    
+    // Adicionar mensagem de confirmação no chat
+    adicionarBubble('received', '✅ Confirmado! (Status marcado manualmente pelo operador)');
+    mostrarToast('✅ Cliente marcado como RESPONDIDO!');
 }
 
 function marcarNaoRespondeu() {
-    statusCliente = 'nao_respondeu';
-    atualizarStatusResponse();
-    salvarStatusCliente();
+    if (statusAtendimento === 'idle') { mostrarToast('⚠️ Nenhum envio ativo para marcar'); return; }
     
-    if (verificacaoTimer) {
-        clearInterval(verificacaoTimer);
-        verificacaoTimer = null;
-    }
-    
+    statusAtendimento = 'noresp';
+    atualizarStatusBox();
+    atualizarGlobalStatus();
     atualizarChipsStatus();
-    document.getElementById('globalStatusDot').className = 'status-dot offline';
-    document.getElementById('globalStatusText').textContent = 'Não respondido';
+    salvarHistorico('noresp');
+    atualizarContadores();
+    mostrarToast('❌ Cliente marcado como NÃO RESPONDEU');
 }
 
 function marcarPendente() {
-    statusCliente = 'pendente';
-    atualizarStatusResponse();
-    salvarStatusCliente();
-    atualizarChipsStatus();
+    if (statusAtendimento === 'idle') { mostrarToast('⚠️ Nenhum envio ativo'); return; }
     
-    if (!verificacaoTimer) iniciarVerificacaoResposta();
+    statusAtendimento = 'pending';
+    atualizarStatusBox();
+    atualizarGlobalStatus();
+    atualizarChipsStatus();
+    salvarHistorico('pending');
+    atualizarContadores();
+    mostrarToast('⏳ Cliente marcado como PENDENTE');
 }
 
-function atualizarStatusResponse() {
-    const box = document.getElementById('responseStatusBox');
-    const text = document.getElementById('responseStatusText');
+function atualizarStatusBox() {
+    const box = document.getElementById('statusBox');
+    const icon = document.getElementById('statusIcon');
+    const text = document.getElementById('statusText');
     
-    box.className = 'response-status';
+    box.className = 'status-box';
     
-    switch(statusCliente) {
-        case 'respondido':
-            box.classList.add('responded');
-            text.textContent = '✅ Cliente respondeu e confirmou';
+    switch(statusAtendimento) {
+        case 'responded':
+            box.classList.add('responded'); icon.textContent = '✅'; text.textContent = 'Cliente respondeu e confirmou';
             break;
-        case 'nao_respondeu':
-            box.classList.add('no-response');
-            text.textContent = '❌ Cliente não respondeu';
+        case 'noresp':
+            box.classList.add('noresp'); icon.textContent = '❌'; text.textContent = 'Cliente NÃO respondeu';
+            break;
+        case 'pending':
+            box.classList.add('pending'); icon.textContent = '⏳'; text.textContent = 'Aguardando resposta do cliente';
             break;
         default:
-            box.classList.add('pending');
-            text.textContent = '⏳ Aguardando resposta do cliente';
+            box.classList.add('idle'); icon.textContent = '💤'; text.textContent = 'Nenhum envio ativo';
+    }
+}
+
+function atualizarGlobalStatus() {
+    const dot = document.getElementById('globalDot');
+    const status = document.getElementById('globalStatus');
+    
+    dot.className = 'status-dot';
+    
+    switch(statusAtendimento) {
+        case 'responded': dot.classList.add('responded'); status.textContent = '✅ Respondido'; break;
+        case 'noresp': dot.classList.add('noresp'); status.textContent = '❌ Não respondeu'; break;
+        case 'pending': dot.classList.add('sent'); status.textContent = '⏳ Aguardando...'; break;
+        default: dot.classList.add('idle'); status.textContent = 'Pronto';
     }
 }
 
 function atualizarChipsStatus() {
-    document.querySelectorAll('.phone-chip').forEach(chip => {
-        chip.classList.remove('responded', 'no-response');
-        if (statusCliente === 'respondido') chip.classList.add('responded');
-        if (statusCliente === 'nao_respondeu') chip.classList.add('no-response');
+    document.querySelectorAll('.phone-chip').forEach(c => {
+        c.classList.remove('responded', 'no-response');
+        if (statusAtendimento === 'responded') c.classList.add('responded');
+        if (statusAtendimento === 'noresp') c.classList.add('no-response');
     });
-}
-
-function salvarStatusCliente() {
-    if (dadosAtuais.numero) {
-        const statusMap = JSON.parse(localStorage.getItem('statusClientes') || '{}');
-        statusMap[dadosAtuais.numero] = {
-            status: statusCliente,
-            nome: dadosAtuais.nome,
-            contrato: dadosAtuais.contrato,
-            data: new Date().toLocaleString('pt-BR')
-        };
-        localStorage.setItem('statusClientes', JSON.stringify(statusMap));
-    }
 }
 
 // ============================================
 // HISTÓRICO
 // ============================================
-function salvarHistorico() {
-    const historico = JSON.parse(localStorage.getItem('historicoMensagens') || '[]');
-    historico.push({
-        dataHora: new Date().toLocaleString('pt-BR'),
-        contrato: dadosAtuais.contrato,
-        nome: dadosAtuais.nome,
-        telefone: dadosAtuais.numero,
-        status: statusCliente
-    });
-    if (historico.length > 100) historico.shift();
-    localStorage.setItem('historicoMensagens', JSON.stringify(historico));
+function salvarHistorico(status) {
+    const h = JSON.parse(localStorage.getItem('historicoMensagens') || '[]');
+    h.push({ dataHora: new Date().toLocaleString('pt-BR'), contrato: dadosAtuais.contrato, nome: dadosAtuais.nome, telefone: dadosAtuais.numero, status });
+    if (h.length > 100) h.shift();
+    localStorage.setItem('historicoMensagens', JSON.stringify(h));
 }
 
 function atualizarContadores() {
-    const historico = JSON.parse(localStorage.getItem('historicoMensagens') || '[]');
+    const h = JSON.parse(localStorage.getItem('historicoMensagens') || '[]');
     const hoje = new Date().toLocaleDateString('pt-BR');
-    
-    const enviosHoje = historico.filter(h => h.dataHora.includes(hoje));
-    const respondidos = enviosHoje.filter(h => h.status === 'respondido').length;
-    const pendentes = enviosHoje.filter(h => h.status === 'pendente').length;
-    
-    document.getElementById('infoEnvios').textContent = enviosHoje.length;
-    document.getElementById('infoRespondidos').textContent = respondidos;
-    document.getElementById('infoPendentes').textContent = pendentes;
+    const hj = h.filter(x => x.dataHora.includes(hoje));
+    document.getElementById('infoEnvios').textContent = hj.length;
+    document.getElementById('infoRespondidos').textContent = hj.filter(x => x.status === 'responded').length;
+    document.getElementById('infoNaoRespondidos').textContent = hj.filter(x => x.status === 'noresp').length;
 }
 
 // ============================================
 // UTILITÁRIOS
 // ============================================
+function copiarMensagem() { if (!dadosAtuais.mensagem) gerarMensagem(); navigator.clipboard.writeText(dadosAtuais.mensagem).then(() => mostrarToast('📋 Copiado!')); }
+
 function limparTudo() {
-    document.getElementById('fonte').value = '';
-    document.getElementById('telefoneInput').value = '';
-    document.getElementById('phoneChips').innerHTML = '<span style="color:var(--text2);font-size:10px;">Telefones detectados aparecerão aqui</span>';
-    document.getElementById('infoNome').textContent = '-';
-    document.getElementById('infoContrato').textContent = '-';
-    document.getElementById('infoEndereco').textContent = '-';
-    document.getElementById('infoCidade').textContent = '-';
-    document.getElementById('infoTelefone').textContent = '-';
+    ['fonte','telefoneInput'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('phoneChips').innerHTML = '<span style="color:var(--text2);font-size:9px;">Detectados do texto ou digite acima</span>';
+    ['infoNome','infoContrato','infoEndereco','infoCidade','infoTelefone'].forEach(id => document.getElementById(id).textContent = '-');
     document.getElementById('mapAddress').innerHTML = '📍 Aguardando endereço...';
-    document.getElementById('badgeTelefones').textContent = '0';
-    document.getElementById('badgeMensagens').textContent = '0';
-    contadorMensagens = 0;
+    document.getElementById('waChat').innerHTML = '<div class="wa-bubble received"><div class="bubble-name">🤖 Sistema</div>👋 As mensagens enviadas aparecerão aqui.<br>⚠️ O status (respondido/não) é <strong>manual</strong>.<div class="bubble-time">---</div></div>';
     
-    // Limpar chat (manter mensagem inicial)
-    const chat = document.getElementById('waChat');
-    chat.innerHTML = `
-        <div class="wa-bubble received">
-            <div class="bubble-name">🤖 Sistema</div>
-            👋 Bem-vindo ao chat em tempo real!<br>
-            Cole os dados do cliente e envie a mensagem.
-            <div class="bubble-time">Agora</div>
-        </div>
-    `;
-    
-    dadosAtuais = {
-        numero: '', contrato: 'N/A', nome: 'NÃO IDENTIFICADO',
-        endereco: 'NÃO INFORMADO', bairro: 'NÃO INFORMADO',
-        cidade: '', estado: '', mensagem: '', telefonesDisponiveis: []
-    };
-    
-    statusCliente = 'pendente';
-    atualizarStatusResponse();
-    
-    if (verificacaoTimer) {
-        clearInterval(verificacaoTimer);
-        verificacaoTimer = null;
-    }
-    
-    document.getElementById('globalStatusDot').className = 'status-dot online';
-    document.getElementById('globalStatusText').textContent = 'Sistema Ativo';
+    dadosAtuais = { numero: '', contrato: 'N/A', nome: 'NÃO IDENTIFICADO', endereco: 'NÃO INFORMADO', bairro: 'NÃO INFORMADO', cidade: '', estado: '', mensagem: '', telefonesDisponiveis: [] };
+    statusAtendimento = 'idle';
+    atualizarStatusBox();
+    atualizarGlobalStatus();
     atualizarContadores();
-    mostrarToast('✅ Campos limpos!');
+    mostrarToast('✅ Limpo!');
 }
 
 function mostrarToast(msg) {
-    const container = document.getElementById('toastContainer');
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.textContent = msg;
-    container.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.3s';
-        setTimeout(() => toast.remove(), 300);
-    }, 3500);
+    const c = document.getElementById('toastContainer');
+    const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+    c.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; setTimeout(() => t.remove(), 300); }, 3500);
 }
 
 // ============================================
-// INICIALIZAÇÃO
+// INIT
 // ============================================
 window.onload = function() {
-    console.log('🚀 Agente V9.0 - Real-Time + Mapa Adaptativo');
-    
-    // localStorage
-    if (!localStorage.getItem('historicoMensagens')) {
-        localStorage.setItem('historicoMensagens', JSON.stringify([]));
-    }
-    if (!localStorage.getItem('statusClientes')) {
-        localStorage.setItem('statusClientes', JSON.stringify({}));
-    }
-    
-    // Inicializar mapa
+    console.log('🚀 Agente V9.1 - Status Manual (sem simulação automática)');
+    if (!localStorage.getItem('historicoMensagens')) localStorage.setItem('historicoMensagens', JSON.stringify([]));
     setTimeout(initMap, 300);
-    
-    // Contadores
     atualizarContadores();
-    atualizarBadgeTelefones();
-    
-    // Status inicial
-    atualizarStatusResponse();
-    
-    console.log('✅ Sistema pronto!');
-    console.log('📱 Telefone editável - digite ou selecione');
-    console.log('💬 Chat em tempo real ativo');
-    console.log('🗺️ Mapa adaptativo com tema alternável');
+    atualizarStatusBox();
 };
 
-// Atalhos
 document.addEventListener('keydown', function(e) {
-    if (e.ctrlKey && e.key === 'Enter') {
-        e.preventDefault();
-        enviarMensagem();
-    }
+    if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); enviarWhatsApp(); }
 });
 </script>
 </body>
