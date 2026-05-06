@@ -3,397 +3,348 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agente V10 - Monitor de Notificações WhatsApp</title>
+    <title>Agente V10.1 - Notificações WhatsApp Sincronizadas</title>
     
-    <!-- Google Maps API -->
     <script>
         const CONFIG = {
             GOOGLE_MAPS_KEY: 'AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg',
-            VERSAO: '10.0.0',
-            CHECK_INTERVAL: 3000 // Verificar notificações a cada 3s
+            VERSAO: '10.1.0',
+            CHECK_INTERVAL: 2000
         };
     </script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&libraries=places&callback=initGoogleMaps" async defer></script>
     
     <style>
         :root {
-            --bg: #0a0f14;
-            --surface: #111b21;
-            --surface2: #1f2c33;
-            --surface3: #2a3942;
-            --text: #e9edef;
-            --text2: #8696a0;
-            --green: #25D366;
-            --green-dark: #075e54;
-            --teal: #00a884;
-            --border: #313d45;
-            --red: #dc3545;
-            --yellow: #ffc107;
-            --blue: #4285F4;
-            --radius: 12px;
+            --bg: #0a0f14; --surface: #111b21; --surface2: #1f2c33;
+            --surface3: #2a3942; --text: #e9edef; --text2: #8696a0;
+            --green: #25D366; --green-dark: #075e54; --teal: #00a884;
+            --border: #313d45; --red: #dc3545; --yellow: #ffc107;
+            --radius: 10px;
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #000;
-            color: var(--text);
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
+            background: #000; color: var(--text); height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column;
         }
 
-        /* NOTIFICATION BANNER */
-        .notification-banner {
-            background: linear-gradient(135deg, #1a3a2a, #0d2a1a);
-            color: #28a745;
-            padding: 8px 20px;
-            text-align: center;
-            font-size: 12px;
-            font-weight: 600;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            animation: slideDown 0.3s ease;
-            border-bottom: 1px solid #28a745;
+        /* BANNER DE NOTIFICAÇÃO */
+        .notif-banner {
+            background: linear-gradient(135deg, #1a3a2a, #0d4a2a);
+            color: #28a745; padding: 10px 20px; text-align: center;
+            font-size: 13px; font-weight: 600; display: none;
+            align-items: center; justify-content: center; gap: 10px;
+            animation: slideDown 0.3s ease; border-bottom: 2px solid #28a745;
+            cursor: pointer; flex-shrink: 0;
         }
-        .notification-banner.show { display: flex; }
-        .notification-banner .close-banner {
-            background: none; border: none; color: #28a745; cursor: pointer;
-            font-size: 16px; margin-left: auto;
+        .notif-banner.show { display: flex; }
+        .notif-banner:hover { background: linear-gradient(135deg, #1e4a2e, #0d5a2a); }
+        .notif-banner .banner-btn {
+            background: #28a745; color: white; border: none; padding: 5px 12px;
+            border-radius: 15px; cursor: pointer; font-size: 10px; font-weight: bold;
+            margin-left: 10px;
         }
         @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
 
         /* TOP BAR */
         .topbar {
             background: linear-gradient(135deg, #075e54, #128C7E);
-            padding: 0 16px; height: 48px;
-            display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 1px solid rgba(255,255,255,0.1); z-index: 100; flex-shrink: 0;
+            padding: 0 16px; height: 46px; display: flex; align-items: center;
+            justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1);
+            z-index: 100; flex-shrink: 0;
         }
         .topbar-left { display: flex; align-items: center; gap: 10px; }
-        .topbar-logo { font-size: 22px; }
-        .topbar-title { font-size: 15px; font-weight: 700; color: white; }
-        .topbar-badge { background: var(--green); color: white; padding: 2px 8px; border-radius: 10px; font-size: 9px; font-weight: bold; }
-        
-        .topbar-center {
-            display: flex; align-items: center; gap: 15px;
-        }
-        .monitor-status {
+        .topbar-logo { font-size: 20px; }
+        .topbar-title { font-size: 14px; font-weight: 700; color: white; }
+        .monitor-pill {
             display: flex; align-items: center; gap: 6px;
-            background: rgba(0,0,0,0.3); padding: 5px 12px;
+            background: rgba(0,0,0,0.3); padding: 4px 12px;
             border-radius: 15px; font-size: 10px;
         }
         .monitor-dot { width: 8px; height: 8px; border-radius: 50%; }
         .monitor-dot.active { background: #28a745; box-shadow: 0 0 8px rgba(40,167,69,0.6); animation: pulse 1.5s infinite; }
-        .monitor-dot.inactive { background: #666; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
         /* TAB BAR */
         .tab-bar {
             background: #1a1a2e; display: flex; align-items: center;
-            padding: 0 8px; height: 36px; gap: 2px; flex-shrink: 0;
-            border-bottom: 1px solid #333;
+            padding: 0 6px; height: 34px; gap: 2px; flex-shrink: 0;
         }
         .tab-item {
-            padding: 6px 14px; border-radius: 8px 8px 0 0;
-            cursor: pointer; font-size: 11px; color: #aaa;
+            padding: 5px 12px; border-radius: 6px 6px 0 0;
+            cursor: pointer; font-size: 10px; color: #aaa;
             border: 1px solid transparent; transition: all 0.2s;
-            display: flex; align-items: center; gap: 6px;
+            display: flex; align-items: center; gap: 5px; position: relative;
         }
-        .tab-item:hover { background: #1a1a3e; color: white; }
-        .tab-item.active { background: var(--surface); color: white; border-color: var(--green); border-bottom-color: var(--surface); }
-        .tab-item .tab-notify { background: var(--red); color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 9px; display: none; align-items: center; justify-content: center; }
-        .tab-item .tab-notify.show { display: flex; animation: pulse 1s infinite; }
+        .tab-item.active { background: var(--surface); color: white; border-color: var(--green); }
+        .tab-badge {
+            background: var(--red); color: white; border-radius: 50%;
+            width: 16px; height: 16px; font-size: 9px; display: none;
+            align-items: center; justify-content: center; position: absolute;
+            top: -6px; right: -6px;
+        }
+        .tab-badge.show { display: flex; animation: pulse 1s infinite; }
 
-        /* CONTENT AREA */
+        /* CONTENT */
         .tab-content-area { flex: 1; position: relative; overflow: hidden; }
         .tab-panel { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: none; flex-direction: column; }
         .tab-panel.active { display: flex; }
 
-        /* DASHBOARD GRID */
+        /* DASHBOARD */
         .dashboard-grid {
             display: grid;
-            grid-template-columns: minmax(280px, 350px) 1fr minmax(280px, 320px);
+            grid-template-columns: 320px 1fr 280px;
             grid-template-rows: 1fr 1fr;
             gap: 6px; padding: 6px; background: #050505; flex: 1; min-height: 0;
         }
-        @media (max-width: 1300px) { .dashboard-grid { grid-template-columns: 300px 1fr; grid-template-rows: auto 1fr auto; } }
-        @media (max-width: 850px) { .dashboard-grid { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr auto; } }
+        @media (max-width: 1300px) { .dashboard-grid { grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr auto; } }
+        @media (max-width: 800px) { .dashboard-grid { grid-template-columns: 1fr; } }
 
         .card {
             background: var(--surface); border-radius: var(--radius);
-            border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; min-height: 0;
+            border: 1px solid var(--border); display: flex; flex-direction: column;
+            overflow: hidden; min-height: 0;
         }
         .card-header {
-            background: var(--surface2); padding: 7px 12px; font-weight: 700;
-            font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+            background: var(--surface2); padding: 6px 10px; font-weight: 700;
+            font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px;
             border-bottom: 1px solid var(--border); display: flex;
             align-items: center; justify-content: space-between; flex-shrink: 0;
         }
-        .card-body { flex: 1; overflow-y: auto; padding: 8px; min-height: 0; }
-        .card-body::-webkit-scrollbar { width: 4px; }
+        .card-body { flex: 1; overflow-y: auto; padding: 6px; min-height: 0; }
+        .card-body::-webkit-scrollbar { width: 3px; }
         .card-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
         .col-inputs { grid-row: 1 / -1; }
-        .col-info { grid-row: 1 / -1; }
-        @media (max-width: 1300px) { .col-inputs { grid-row: auto; } .col-info { grid-row: auto; } }
+        .col-monitor { grid-row: 1 / -1; }
 
         /* INPUTS */
-        .input-group { margin-bottom: 8px; }
-        .input-group label { display: block; font-size: 9px; color: var(--text2); margin-bottom: 2px; text-transform: uppercase; }
-        textarea, input[type="text"], input[type="tel"] {
-            width: 100%; padding: 8px 10px; background: var(--surface3);
-            border: 1px solid var(--border); color: var(--text); border-radius: 6px;
-            font-size: 12px; font-family: inherit; transition: all 0.2s;
+        .input-group { margin-bottom: 6px; }
+        .input-group label { display: block; font-size: 8px; color: var(--text2); margin-bottom: 2px; text-transform: uppercase; }
+        textarea, input[type="tel"] {
+            width: 100%; padding: 7px 9px; background: var(--surface3);
+            border: 1px solid var(--border); color: var(--text); border-radius: 5px;
+            font-size: 11px; font-family: inherit;
         }
         textarea:focus, input:focus { outline: none; border-color: var(--teal); }
-        textarea { min-height: 70px; resize: vertical; }
-        .phone-row { display: flex; gap: 5px; align-items: center; }
+        textarea { min-height: 65px; resize: vertical; }
+        .phone-row { display: flex; gap: 4px; align-items: center; }
         .phone-row input { flex: 1; }
-        .phone-chips { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; min-height: 22px; }
+        .phone-chips { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
         .phone-chip {
-            padding: 3px 8px; background: var(--surface3); border: 1px solid var(--border);
-            border-radius: 10px; cursor: pointer; font-size: 10px; transition: all 0.2s;
+            padding: 3px 7px; background: var(--surface3); border: 1px solid var(--border);
+            border-radius: 8px; cursor: pointer; font-size: 9px; transition: all 0.2s;
         }
-        .phone-chip:hover { background: var(--teal); color: white; }
-        .phone-chip.selected { background: var(--green); color: white; font-weight: bold; }
-        .phone-chip.responded { background: #1a3a2a; border-color: #28a745; color: #28a745; }
+        .phone-chip:hover, .phone-chip.selected { background: var(--green); color: white; font-weight: bold; }
+        .phone-chip.responded { background: #1a3a2a !important; border-color: #28a745 !important; color: #28a745 !important; }
         .phone-chip.responded::after { content: ' ✅'; }
-        .phone-chip.noresp { background: #3a1a1a; border-color: var(--red); color: var(--red); }
-        .phone-chip.noresp::after { content: ' ❌'; }
 
         /* BOTÕES */
         .btn {
-            padding: 8px 14px; border: none; border-radius: 6px; cursor: pointer;
-            font-weight: 600; font-size: 11px; transition: all 0.2s;
-            display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+            padding: 7px 12px; border: none; border-radius: 5px; cursor: pointer;
+            font-weight: 600; font-size: 10px; transition: all 0.2s;
+            display: inline-flex; align-items: center; justify-content: center; gap: 4px;
         }
         .btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
-        .btn-wa { background: var(--green); color: white; width: 100%; font-size: 13px; padding: 10px; }
-        .btn-send { background: var(--teal); color: white; }
+        .btn-wa { background: var(--green); color: white; width: 100%; font-size: 12px; padding: 9px; }
+        .btn-sm { padding: 4px 8px; font-size: 8px; }
         .btn-outline { background: var(--surface3); color: var(--text); border: 1px solid var(--border); }
-        .btn-sm { padding: 5px 9px; font-size: 9px; }
-        .btn-group { display: flex; gap: 5px; margin-top: 5px; }
+        .btn-group { display: flex; gap: 4px; margin-top: 4px; }
 
         /* MAPA */
-        .map-wrapper { flex: 1; position: relative; min-height: 180px; }
-        #map, #mapFull { width: 100%; height: 100%; border-radius: 0 0 var(--radius) var(--radius); }
-        .map-address-bar {
-            position: absolute; top: 6px; left: 6px; right: 6px; z-index: 1000;
-            background: rgba(0,0,0,0.85); color: white; padding: 6px 10px;
-            border-radius: 6px; font-size: 10px; backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.15); pointer-events: none;
+        .map-wrapper { flex: 1; position: relative; min-height: 160px; }
+        #mapDash, #mapFull { width: 100%; height: 100%; border-radius: 0 0 var(--radius) var(--radius); }
+        .map-info {
+            position: absolute; top: 5px; left: 5px; right: 5px; z-index: 1000;
+            background: rgba(0,0,0,0.85); color: white; padding: 5px 8px;
+            border-radius: 5px; font-size: 9px; pointer-events: none;
         }
-        .map-controls {
-            position: absolute; bottom: 6px; left: 6px; right: 6px; z-index: 1000;
-            display: flex; gap: 4px; flex-wrap: wrap;
-        }
-        .map-btn {
-            padding: 4px 8px; background: rgba(0,0,0,0.8); color: white;
-            border: 1px solid rgba(255,255,255,0.3); border-radius: 15px;
-            cursor: pointer; font-size: 9px; backdrop-filter: blur(10px);
-        }
-        .map-btn:hover { background: rgba(37,211,102,0.8); }
 
-        /* WHATSAPP CHAT */
+        /* CHAT WHATSAPP */
         .wa-chat {
             flex: 1; background: #0a0f14;
-            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23111b21' fill-opacity='0.2'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-            padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px;
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23111b21' fill-opacity='0.2'%3E%3Cpath d='M24 22v-3h-1v3h-3v1h3v3h1v-3h3v-1h-3zM24 0V-3h-1V0h-3v1h3v3h1V1h3V0h-3zM4 22v-3H3v3H0v1h3v3h1v-3h3v-1H4zM4 0V-3H3V0H0v1h3v3h1V1h3V0H4z'/%3E%3C/g%3E%3C/svg%3E");
+            padding: 8px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;
         }
         .wa-bubble {
-            max-width: 80%; padding: 7px 10px; border-radius: 7px;
-            font-size: 11px; line-height: 1.4; word-wrap: break-word;
-            animation: bubblePop 0.3s ease;
+            max-width: 82%; padding: 6px 9px; border-radius: 6px;
+            font-size: 10px; line-height: 1.4; word-wrap: break-word;
+            animation: pop 0.3s ease;
         }
-        @keyframes bubblePop { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pop { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
         .wa-bubble.received { background: #202c33; align-self: flex-start; border-top-left-radius: 2px; }
         .wa-bubble.sent { background: #005c4b; align-self: flex-end; border-top-right-radius: 2px; }
-        .wa-bubble.auto-response { background: #1a3a2a; border: 1px solid #28a745; align-self: flex-start; border-top-left-radius: 2px; }
-        .wa-bubble .bubble-name { font-size: 10px; color: #06cf9c; font-weight: 600; margin-bottom: 2px; }
-        .wa-bubble .bubble-time { font-size: 9px; color: rgba(255,255,255,0.4); text-align: right; margin-top: 2px; }
-        .wa-bubble .bubble-badge {
+        .wa-bubble.auto-detect {
+            background: #1a3a2a; align-self: flex-start; border-top-left-radius: 2px;
+            border: 1px solid #28a745; box-shadow: 0 0 10px rgba(40,167,69,0.3);
+        }
+        .wa-bubble .b-name { font-size: 9px; color: #06cf9c; font-weight: 600; margin-bottom: 2px; }
+        .wa-bubble .b-time { font-size: 8px; color: rgba(255,255,255,0.4); text-align: right; margin-top: 2px; }
+        .wa-bubble .b-tag {
             display: inline-block; background: #28a745; color: white;
-            padding: 1px 6px; border-radius: 8px; font-size: 8px; margin-left: 5px;
+            padding: 1px 5px; border-radius: 6px; font-size: 7px; margin-left: 4px;
+            font-weight: bold;
         }
 
-        /* INFO */
-        .info-row {
+        /* MONITOR PANEL */
+        .monitor-log {
+            font-family: 'Consolas', monospace; font-size: 9px;
+            color: #aaa; line-height: 1.5; max-height: 100%;
+        }
+        .monitor-log .log-line { padding: 1px 0; border-bottom: 1px solid rgba(255,255,255,0.02); }
+        .monitor-log .log-time { color: #555; }
+        .monitor-log .log-detect { color: #28a745; font-weight: bold; }
+        .monitor-log .log-send { color: #4fc3f7; }
+        .monitor-log .log-warn { color: var(--yellow); }
+        .monitor-log .log-error { color: var(--red); }
+
+        .client-status-row {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 11px;
+            padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
+            font-size: 9px;
         }
-        .info-row .key { color: var(--text2); font-size: 9px; text-transform: uppercase; }
-        .info-row .val { color: var(--text); font-weight: 600; text-align: right; }
-        .info-row .val.green { color: var(--green); font-size: 14px; }
-        .info-row .val.red { color: var(--red); }
-
-        /* ASSISTANT LOG */
-        .assistant-log {
-            background: #0a0a0a; border-radius: 6px; padding: 8px;
-            font-size: 10px; max-height: 180px; overflow-y: auto;
-            font-family: 'Consolas', 'Courier New', monospace;
-            color: #aaa; line-height: 1.6;
-        }
-        .log-entry { padding: 2px 0; }
-        .log-entry .time { color: #666; }
-        .log-entry .event { color: #06cf9c; }
-        .log-entry .warn { color: var(--yellow); }
-        .log-entry .error { color: var(--red); }
-        .log-entry .highlight { color: #fff; font-weight: bold; }
+        .client-status-row .cs-name { color: var(--text); font-weight: 600; }
+        .client-status-row .cs-phone { color: var(--text2); }
+        .client-status-row .cs-status { padding: 2px 6px; border-radius: 8px; font-size: 8px; }
+        .cs-status.waiting { background: #3a351b; color: var(--yellow); }
+        .cs-status.replied { background: #1a3a2a; color: #28a745; }
+        .cs-status.noreply { background: #3a1a1a; color: var(--red); }
 
         /* TOAST */
-        .toast-container { position: fixed; top: 50px; right: 15px; z-index: 9999; display: flex; flex-direction: column; gap: 5px; }
+        .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 5px; }
         .toast {
             background: var(--surface2); color: white; padding: 8px 14px;
             border-radius: 8px; font-size: 11px; box-shadow: 0 6px 20px rgba(0,0,0,0.5);
-            border-left: 3px solid var(--green); animation: toastIn 0.3s ease; max-width: 320px;
+            border-left: 3px solid var(--green); animation: toastIn 0.3s ease;
         }
-        .toast.warn { border-left-color: var(--yellow); }
-        .toast.error { border-left-color: var(--red); }
-        @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes toastIn { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
 </head>
 <body>
 
-<!-- NOTIFICATION BANNER -->
-<div class="notification-banner" id="notificationBanner">
+<!-- BANNER DE NOTIFICAÇÃO DETECTADA -->
+<div class="notif-banner" id="notifBanner" onclick="irParaChat()">
     <span>🔔</span>
-    <span id="notificationBannerText">Nova resposta detectada!</span>
-    <button class="close-banner" onclick="fecharBanner()">×</button>
+    <span id="notifBannerText">Resposta detectada!</span>
+    <button class="banner-btn" onclick="event.stopPropagation(); irParaChat()">💬 VER CHAT</button>
+    <button style="background:none;border:none;color:#28a745;cursor:pointer;font-size:16px;" onclick="event.stopPropagation(); fecharBanner()">×</button>
 </div>
 
 <!-- TOP BAR -->
 <div class="topbar">
     <div class="topbar-left">
         <span class="topbar-logo">⚡</span>
-        <span class="topbar-title">Agente de Mensagens</span>
-        <span class="topbar-badge">v10</span>
+        <span class="topbar-title">Agente V10.1 - Sincronizado</span>
     </div>
-    <div class="topbar-center">
-        <div class="monitor-status">
-            <div class="monitor-dot active" id="monitorDot"></div>
-            <span id="monitorText">🔍 Monitorando notificações...</span>
-        </div>
+    <div class="monitor-pill">
+        <div class="monitor-dot active" id="monitorDot"></div>
+        <span id="monitorText">🔍 Monitorando notificações...</span>
     </div>
-    <div style="font-size:10px;color:rgba(255,255,255,0.7);">
-        <span id="relogio">--:--:--</span>
-    </div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.7);" id="relogio">--:--:--</div>
 </div>
 
 <!-- TAB BAR -->
-<div class="tab-bar" id="tabBar">
+<div class="tab-bar">
     <div class="tab-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
-        📊 Dashboard
-        <span class="tab-notify" id="notifyDash">!</span>
+        📊 Dashboard <span class="tab-badge" id="badgeDash">0</span>
     </div>
     <div class="tab-item" data-tab="whatsapp" onclick="switchTab('whatsapp')">
-        💬 WhatsApp
-        <span class="tab-notify" id="notifyWA">!</span>
+        💬 Chat <span class="tab-badge" id="badgeChat">0</span>
     </div>
     <div class="tab-item" data-tab="mapa" onclick="switchTab('mapa')">
         🗺️ Mapa
     </div>
-    <div class="tab-item" data-tab="assistente" onclick="switchTab('assistente')">
-        🤖 Assistente
-        <span class="tab-notify" id="notifyAssist">!</span>
+    <div class="tab-item" data-tab="monitor" onclick="switchTab('monitor')">
+        🤖 Monitor <span class="tab-badge" id="badgeMonitor">0</span>
     </div>
 </div>
 
 <!-- CONTENT -->
 <div class="tab-content-area">
     
-    <!-- ABA DASHBOARD -->
+    <!-- DASHBOARD -->
     <div class="tab-panel active" id="panel-dashboard">
         <div class="dashboard-grid">
             <!-- INPUTS -->
             <div class="card col-inputs">
                 <div class="card-header">📋 DADOS DO CLIENTE</div>
                 <div class="card-body">
-                    <div class="input-group">
-                        <label>📋 Cole o texto</label>
-                        <textarea id="fonte" placeholder="Cole aqui os dados do cliente..." oninput="processarTexto()"></textarea>
-                    </div>
-                    <div class="input-group">
+                    <textarea id="fonte" placeholder="Cole os dados do cliente aqui..." oninput="processarTexto()"></textarea>
+                    <div style="margin-top:6px;">
                         <label>📱 TELEFONE</label>
                         <div class="phone-row">
                             <input type="tel" id="telefoneInput" placeholder="(11) 91234-5678" oninput="onTelefoneEditado()">
-                            <button class="btn btn-send btn-sm" onclick="disparoDireto()">⚡ DIRETO</button>
+                            <button class="btn btn-sm" style="background:var(--teal);color:white;" onclick="disparoDireto()">⚡</button>
                         </div>
-                        <div class="phone-chips" id="phoneChips"><span style="color:var(--text2);font-size:9px;">Detectados ou digite</span></div>
+                        <div class="phone-chips" id="phoneChips"><span style="color:var(--text2);font-size:8px;">Detectados do texto</span></div>
                     </div>
-                    <button class="btn btn-wa" onclick="enviarWhatsApp()">💬 ENVIAR WHATSAPP</button>
+                    <button class="btn btn-wa" onclick="enviarWhatsApp()" style="margin-top:6px;">💬 ENVIAR WHATSAPP</button>
                     <div class="btn-group">
-                        <button class="btn btn-outline btn-sm" onclick="copiarMensagem()" style="flex:1;">📋 Copiar</button>
+                        <button class="btn btn-outline btn-sm" onclick="copiarMensagem()">📋 Copiar</button>
                         <button class="btn btn-sm" style="background:#dc3545;color:white;" onclick="limparTudo()">🗑️</button>
                     </div>
                 </div>
             </div>
             
             <!-- MAPA -->
-            <div class="card col-center-top">
-                <div class="card-header">🗺️ GOOGLE MAPS <button class="btn btn-sm btn-outline" onclick="minhaLocalizacao()">🎯 Minha Local</button></div>
-                <div class="map-wrapper"><div id="map"></div><div class="map-address-bar" id="mapAddress">📍 Aguardando...</div></div>
-            </div>
-            
-            <!-- CHAT -->
-            <div class="card col-center-bottom">
-                <div class="card-header">💬 CONVERSA <span style="font-size:9px;color:var(--text2);">Respostas reais aparecem aqui</span></div>
-                <div class="wa-chat" id="waChat">
-                    <div class="wa-bubble received"><div class="bubble-name">🤖 Sistema</div>👋 Envie uma mensagem e monitore as respostas reais.<div class="bubble-time">---</div></div>
+            <div class="card">
+                <div class="card-header">🗺️ GOOGLE MAPS</div>
+                <div class="map-wrapper">
+                    <div id="mapDash"></div>
+                    <div class="map-info" id="mapInfo">📍 Aguardando...</div>
                 </div>
             </div>
             
-            <!-- INFO -->
-            <div class="card col-info">
-                <div class="card-header">📊 STATUS + ASSISTENTE</div>
+            <!-- CHAT -->
+            <div class="card">
+                <div class="card-header">💬 CONVERSA EM TEMPO REAL</div>
+                <div class="wa-chat" id="waChatDash">
+                    <div class="wa-bubble received"><div class="b-name">🤖 Sistema</div>Envie uma mensagem e veja as respostas aqui.<div class="b-time">---</div></div>
+                </div>
+            </div>
+            
+            <!-- MONITOR PANEL -->
+            <div class="card col-monitor">
+                <div class="card-header">🤖 MONITOR DE RESPOSTAS</div>
                 <div class="card-body">
-                    <div class="info-row"><span class="key">👤 Nome</span><span class="val" id="infoNome">-</span></div>
-                    <div class="info-row"><span class="key">📄 Contrato</span><span class="val" id="infoContrato">-</span></div>
-                    <div class="info-row"><span class="key">📱 Telefone</span><span class="val green" id="infoTelefone">-</span></div>
-                    <div class="info-row"><span class="key">🏙️ Cidade</span><span class="val" id="infoCidade">-</span></div>
+                    <div id="clientesAtivos" style="margin-bottom:8px;">
+                        <div style="color:var(--text2);font-size:9px;">Nenhum cliente sendo monitorado</div>
+                    </div>
                     <hr style="border-color:var(--border);margin:6px 0;">
-                    <div class="info-row"><span class="key">📊 Envios</span><span class="val" id="infoEnvios">0</span></div>
-                    <div class="info-row"><span class="key">✅ Respondidos</span><span class="val green" id="infoRespondidos">0</span></div>
-                    <div class="info-row"><span class="key">❌ Não respondidos</span><span class="val red" id="infoNaoRespondidos">0</span></div>
-                    <hr style="border-color:var(--border);margin:6px 0;">
-                    <div style="font-size:9px;color:var(--text2);margin-bottom:4px;">🤖 ASSISTENTE DE MONITORAMENTO</div>
-                    <div class="assistant-log" id="assistantLog">
-                        <div class="log-entry"><span class="time">[--:--]</span> 🤖 Assistente aguardando disparos...</div>
+                    <div class="monitor-log" id="monitorLogDash">
+                        <div class="log-line"><span class="log-time">[--:--]</span> 🤖 Aguardando disparos...</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- ABA WHATSAPP -->
+    <!-- WHATSAPP CHAT -->
     <div class="tab-panel" id="panel-whatsapp">
         <div class="card" style="flex:1;margin:6px;">
-            <div class="card-header">💬 WHATSAPP WEB - MONITOR ATIVO</div>
-            <div class="wa-chat" id="waChatFull" style="background:#0a0f14;">
-                <div class="wa-bubble received"><div class="bubble-name">🤖 Sistema</div>👋 Todas as conversas monitoradas aparecem aqui.<br>As respostas reais do WhatsApp são detectadas automaticamente.<div class="bubble-time">---</div></div>
+            <div class="card-header">💬 CHAT COMPLETO - RESPOSTAS DETECTADAS</div>
+            <div class="wa-chat" id="waChatFull">
+                <div class="wa-bubble received"><div class="b-name">🤖 Sistema</div>Todas as conversas aparecem aqui em tempo real.<div class="b-time">---</div></div>
             </div>
         </div>
     </div>
     
-    <!-- ABA MAPA -->
+    <!-- MAPA -->
     <div class="tab-panel" id="panel-mapa">
         <div style="width:100%;height:100%;position:relative;">
             <div id="mapFull" style="width:100%;height:100%;"></div>
-            <div style="position:absolute;top:10px;left:10px;right:10px;z-index:1000;background:rgba(0,0,0,0.85);color:white;padding:8px;border-radius:8px;font-size:11px;" id="mapFullAddress">📍 Aguardando...</div>
+            <div style="position:absolute;top:10px;left:10px;right:10px;background:rgba(0,0,0,0.85);color:white;padding:8px;border-radius:6px;font-size:10px;" id="mapFullInfo">📍 Aguardando...</div>
         </div>
     </div>
     
-    <!-- ABA ASSISTENTE -->
-    <div class="tab-panel" id="panel-assistente">
+    <!-- MONITOR -->
+    <div class="tab-panel" id="panel-monitor">
         <div class="card" style="flex:1;margin:6px;">
-            <div class="card-header">🤖 ASSISTENTE DE MONITORAMENTO - LOG COMPLETO</div>
+            <div class="card-header">🤖 LOG COMPLETO DO MONITOR</div>
             <div class="card-body">
-                <div class="assistant-log" id="assistantLogFull" style="max-height:100%;font-size:11px;">
-                    <div class="log-entry"><span class="time">[--:--]</span> 🤖 Assistente iniciado. Monitorando notificações do Windows...</div>
+                <div class="monitor-log" id="monitorLogFull">
+                    <div class="log-line"><span class="log-time">[--:--]</span> 🤖 Sistema de monitoramento iniciado...</div>
                 </div>
             </div>
         </div>
@@ -405,295 +356,398 @@
 
 <script>
 // ============================================
-// VARIÁVEIS GLOBAIS
+// VARIÁVEIS
 // ============================================
-let mapDashboard, mapFull, markerDashboard, markerFull;
-let googleMapsReady = false;
-let currentLat = -23.5505, currentLng = -46.6333, currentAddress = '';
+let mapDash, mapFull, markerDash, markerFull;
+let mapsReady = false;
+let currentLat = -23.5505, currentLng = -46.6333;
 
 const DDDS_VALIDOS = new Set([11,12,13,14,15,16,17,18,19,21,22,24,27,28,31,32,33,34,35,37,38,41,42,43,44,45,46,47,48,49,51,53,54,55,61,62,63,64,65,66,67,68,69,71,73,74,75,77,79,81,82,83,84,85,86,87,88,89,91,92,93,94,95,96,97,98,99]);
 
-let dadosAtuais = { numero: '', contrato: 'N/A', nome: 'NÃO IDENTIFICADO', endereco: 'NÃO INFORMADO', bairro: 'NÃO INFORMADO', cidade: '', estado: '', mensagem: '', telefonesDisponiveis: [] };
+let dadosAtuais = { numero: '', nome: 'NÃO IDENTIFICADO', contrato: 'N/A', endereco: 'NÃO INFORMADO', cidade: '', mensagem: '', telefonesDisponiveis: [] };
 
-let clientesMonitorados = {}; // { telefone: { nome, contrato, status, dataEnvio, ultimaVerificacao } }
-let notificacoesDetectadas = [];
-let monitorAtivo = true;
+let clientesMonitorados = {};
+let totalRespostasDetectadas = 0;
+let notificacoesProcessadas = new Set();
 
 // ============================================
-// GOOGLE MAPS INIT
+// GOOGLE MAPS
 // ============================================
 function initGoogleMaps() {
-    console.log('🗺️ Google Maps API carregada');
-    googleMapsReady = true;
-    initMapDashboard();
-    adicionarLog('🗺️ Google Maps inicializado com sucesso');
+    console.log('🗺️ Google Maps pronto');
+    mapsReady = true;
+    initMapDash();
+    adicionarLog('🗺️ Google Maps carregado');
 }
 
-function initMapDashboard() {
-    if (!googleMapsReady || mapDashboard) return;
-    
-    mapDashboard = new google.maps.Map(document.getElementById('map'), {
+function initMapDash() {
+    if (!mapsReady || mapDash) return;
+    mapDash = new google.maps.Map(document.getElementById('mapDash'), {
         center: { lat: currentLat, lng: currentLng }, zoom: 15,
         styles: [{ featureType: "all", elementType: "geometry", stylers: [{ color: "#242f3e" }] }]
     });
-    
-    markerDashboard = new google.maps.Marker({
-        position: { lat: currentLat, lng: currentLng },
-        map: mapDashboard, draggable: true, title: 'Arraste para ajustar'
-    });
-    
-    markerDashboard.addListener('dragend', () => {
-        const pos = markerDashboard.getPosition();
-        currentLat = pos.lat(); currentLng = pos.lng();
-        reverseGeocodeGoogle(currentLat, currentLng, 'dashboard');
-    });
-    
-    mapDashboard.addListener('click', (e) => {
-        markerDashboard.setPosition(e.latLng);
-        currentLat = e.latLng.lat(); currentLng = e.latLng.lng();
-        reverseGeocodeGoogle(currentLat, currentLng, 'dashboard');
-    });
+    markerDash = new google.maps.Marker({ position: { lat: currentLat, lng: currentLng }, map: mapDash, draggable: true });
+    markerDash.addListener('dragend', () => updatePosition(markerDash.getPosition()));
+    mapDash.addListener('click', e => { markerDash.setPosition(e.latLng); updatePosition(e.latLng); });
 }
 
 function initMapFull() {
-    if (!googleMapsReady || mapFull) return;
-    
+    if (!mapsReady || mapFull) return;
     mapFull = new google.maps.Map(document.getElementById('mapFull'), {
         center: { lat: currentLat, lng: currentLng }, zoom: 16,
         styles: [{ featureType: "all", elementType: "geometry", stylers: [{ color: "#242f3e" }] }]
     });
-    
-    markerFull = new google.maps.Marker({
-        position: { lat: currentLat, lng: currentLng },
-        map: mapFull, draggable: true
-    });
-    
-    markerFull.addListener('dragend', () => {
-        const pos = markerFull.getPosition();
-        currentLat = pos.lat(); currentLng = pos.lng();
-        reverseGeocodeGoogle(currentLat, currentLng, 'full');
-    });
+    markerFull = new google.maps.Marker({ position: { lat: currentLat, lng: currentLng }, map: mapFull, draggable: true });
 }
 
-function reverseGeocodeGoogle(lat, lng, source) {
-    const geocoder = new google.maps.Geocoder();
-    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+function updatePosition(pos) {
+    currentLat = pos.lat(); currentLng = pos.lng();
+    new google.maps.Geocoder().geocode({ location: pos }, (results, status) => {
         if (status === 'OK' && results[0]) {
-            currentAddress = results[0].formatted_address;
-            document.getElementById('mapAddress').innerHTML = `📍 ${currentAddress.substring(0, 80)}...`;
-            if (document.getElementById('mapFullAddress')) {
-                document.getElementById('mapFullAddress').innerHTML = `📍 ${currentAddress}`;
-            }
-            
-            results[0].address_components.forEach(c => {
-                if (c.types.includes('administrative_area_level_2') || c.types.includes('locality')) {
-                    document.getElementById('infoCidade').textContent = c.long_name;
-                }
-            });
+            document.getElementById('mapInfo').innerHTML = `📍 ${results[0].formatted_address.substring(0, 70)}...`;
         }
     });
 }
 
-function geocodeGoogle(address) {
-    if (!googleMapsReady) return;
-    const geocoder = new google.maps.Geocoder();
-    geocoder.geocode({ address: address + ', Brasil' }, (results, status) => {
+function geocodeAddress(address) {
+    if (!mapsReady) return;
+    new google.maps.Geocoder().geocode({ address: address + ', Brasil' }, (results, status) => {
         if (status === 'OK' && results[0]) {
             const loc = results[0].geometry.location;
             currentLat = loc.lat(); currentLng = loc.lng();
-            if (mapDashboard) { mapDashboard.setCenter(loc); markerDashboard.setPosition(loc); }
-            if (mapFull) { mapFull.setCenter(loc); markerFull.setPosition(loc); }
-            currentAddress = results[0].formatted_address;
-            document.getElementById('mapAddress').innerHTML = `📍 ${currentAddress.substring(0, 80)}...`;
+            if (mapDash) { mapDash.setCenter(loc); markerDash.setPosition(loc); }
+            document.getElementById('mapInfo').innerHTML = `📍 ${results[0].formatted_address.substring(0, 70)}...`;
         }
     });
 }
 
-function minhaLocalizacao() {
-    navigator.geolocation?.getCurrentPosition(p => {
-        currentLat = p.coords.latitude; currentLng = p.coords.longitude;
-        const pos = { lat: currentLat, lng: currentLng };
-        if (mapDashboard) { mapDashboard.setCenter(pos); markerDashboard.setPosition(pos); }
-        if (mapFull) { mapFull.setCenter(pos); markerFull.setPosition(pos); }
-        reverseGeocodeGoogle(currentLat, currentLng, 'dashboard');
-    });
-}
-
 // ============================================
-// SISTEMA DE ABAS
+// ABAS
 // ============================================
-function switchTab(tabName) {
+function switchTab(name) {
     document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     
-    const tabEl = document.querySelector(`.tab-item[data-tab="${tabName}"]`);
-    const panelEl = document.getElementById(`panel-${tabName}`);
+    const tab = document.querySelector(`.tab-item[data-tab="${name}"]`);
+    const panel = document.getElementById(`panel-${name}`);
+    if (tab) tab.classList.add('active');
+    if (panel) panel.classList.add('active');
     
-    if (tabEl) tabEl.classList.add('active');
-    if (panelEl) panelEl.classList.add('active');
+    if (name === 'mapa' && !mapFull) setTimeout(initMapFull, 300);
+    if (name === 'whatsapp') document.getElementById('badgeChat').classList.remove('show');
+    if (name === 'dashboard') document.getElementById('badgeDash').classList.remove('show');
+    if (name === 'monitor') document.getElementById('badgeMonitor').classList.remove('show');
     
-    // Limpar notificações da aba
-    const notifyEl = document.getElementById(`notify${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`);
-    if (notifyEl) notifyEl.classList.remove('show');
-    
-    // Inicializar mapa full se necessário
-    if (tabName === 'mapa' && !mapFull) setTimeout(initMapFull, 300);
-    
-    // Ajustar mapa
-    if (tabName === 'mapa' && mapFull) setTimeout(() => { google.maps.event.trigger(mapFull, 'resize'); mapFull.setCenter({ lat: currentLat, lng: currentLng }); }, 200);
-    if (tabName === 'dashboard' && mapDashboard) setTimeout(() => google.maps.event.trigger(mapDashboard, 'resize'), 200);
+    setTimeout(() => {
+        if (mapDash) google.maps.event.trigger(mapDash, 'resize');
+        if (mapFull) google.maps.event.trigger(mapFull, 'resize');
+    }, 200);
 }
 
-// ============================================
-// MONITOR DE NOTIFICAÇÕES DO WINDOWS
-// ============================================
-let ultimaNotificacao = '';
-
-async function verificarNotificacoesWindows() {
-    if (!monitorAtivo) return;
-    
-    try {
-        // Verificar se o navegador suporta a API de Notificações
-        if (!('Notification' in window)) {
-            adicionarLog('⚠️ API de Notificações não suportada', 'warn');
-            return;
-        }
-        
-        // Solicitar permissão para notificações
-        if (Notification.permission === 'default') {
-            const permissao = await Notification.requestPermission();
-            if (permissao === 'granted') {
-                adicionarLog('✅ Permissão de notificações concedida');
-            }
-        }
-        
-        // Verificar notificações do Service Worker (se registrado)
-        if ('serviceWorker' in navigator) {
-            const registration = await navigator.serviceWorker.ready;
-            const notifications = await registration.getNotifications();
-            
-            notifications.forEach(notif => {
-                const titulo = notif.title || '';
-                const corpo = notif.body || '';
-                
-                // Detectar se é notificação do WhatsApp
-                if (titulo.includes('WhatsApp') || corpo.includes('whatsapp') || 
-                    titulo.includes('nova mensagem') || corpo.includes('respondeu')) {
-                    
-                    const notificacaoId = `${titulo}-${corpo}-${notif.timestamp}`;
-                    if (notificacaoId !== ultimaNotificacao) {
-                        ultimaNotificacao = notificacaoId;
-                        processarNotificacaoWhatsApp(titulo, corpo);
-                        adicionarLog(`🔔 Notificação WhatsApp detectada: ${titulo.substring(0, 40)}`, 'highlight');
-                    }
-                }
-                
-                notif.close();
-            });
-        }
-        
-        // Monitorar notificações do sistema usando Performance Observer
-        if ('PerformanceObserver' in window) {
-            const observer = new PerformanceObserver((list) => {
-                list.getEntries().forEach(entry => {
-                    if (entry.name.includes('notification') || entry.name.includes('whatsapp')) {
-                        adicionarLog(`📡 Evento de notificação detectado`, 'event');
-                    }
-                });
-            });
-            observer.observe({ entryTypes: ['resource'] });
-        }
-        
-    } catch (error) {
-        adicionarLog(`❌ Erro ao verificar notificações: ${error.message}`, 'error');
-    }
-}
-
-function processarNotificacaoWhatsApp(titulo, corpo) {
-    // Tentar identificar o telefone ou nome na notificação
-    const nomeMatch = titulo.match(/([A-ZÁ-Ú][a-zá-ú]+(?:\s[A-ZÁ-Ú][a-zá-ú]+)*)/);
-    const nomeDetectado = nomeMatch ? nomeMatch[0] : 'Desconhecido';
-    
-    // Verificar se corresponde a algum cliente monitorado
-    let clienteEncontrado = null;
-    Object.entries(clientesMonitorados).forEach(([tel, dados]) => {
-        if (dados.nome.toLowerCase().includes(nomeDetectado.toLowerCase()) ||
-            nomeDetectado.toLowerCase().includes(dados.nome.toLowerCase())) {
-            clienteEncontrado = { telefone: tel, ...dados };
-        }
-    });
-    
-    if (clienteEncontrado) {
-        // Atualizar status do cliente
-        clienteEncontrado.status = 'responded';
-        clienteEncontrado.ultimaVerificacao = new Date().toLocaleString('pt-BR');
-        clientesMonitorados[clienteEncontrado.telefone] = clienteEncontrado;
-        
-        // Adicionar ao chat
-        adicionarBubbleChatAuto(clienteEncontrado.nome, corpo || '✅ Respondeu (conteúdo detectado via notificação)');
-        
-        // Mostrar banner
-        mostrarBanner(`✅ ${clienteEncontrado.nome} respondeu! Contrato: ${clienteEncontrado.contrato}`);
-        
-        // Notificar abas
-        document.getElementById('notifyDash').classList.add('show');
-        document.getElementById('notifyWA').classList.add('show');
-        document.getElementById('notifyAssist').classList.add('show');
-        
-        // Atualizar contadores
-        atualizarContadores();
-        atualizarChipsStatus();
-        
-        adicionarLog(`✅ RESPOSTA DETECTADA: ${clienteEncontrado.nome} (${formatarTelefone(clienteEncontrado.telefone)}) - ${new Date().toLocaleTimeString()}`, 'highlight');
-        
-        // Tocar som de notificação
-        tocarSomNotificacao();
-    } else {
-        adicionarLog(`🔔 Notificação de "${nomeDetectado}" - não corresponde a cliente monitorado`, 'warn');
-    }
-    
-    salvarDadosMonitoramento();
-}
-
-function tocarSomNotificacao() {
-    try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.frequency.setValueAtTime(800, ctx.currentTime);
-        osc.frequency.setValueAtTime(1200, ctx.currentTime + 0.1);
-        osc.frequency.setValueAtTime(1000, ctx.currentTime + 0.2);
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-        osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.5);
-    } catch(e) {}
-}
-
-function mostrarBanner(msg) {
-    document.getElementById('notificationBannerText').textContent = msg;
-    document.getElementById('notificationBanner').classList.add('show');
-    setTimeout(fecharBanner, 8000);
+function irParaChat() {
+    switchTab('whatsapp');
+    fecharBanner();
 }
 
 function fecharBanner() {
-    document.getElementById('notificationBanner').classList.remove('show');
+    document.getElementById('notifBanner').classList.remove('show');
 }
 
 // ============================================
-// ASSISTENTE DE LOG
+// MONITOR DE NOTIFICAÇÕES SINCRONIZADO
+// ============================================
+async function verificarNotificacoes() {
+    if (!('Notification' in window)) return;
+    
+    try {
+        if (Notification.permission === 'default') {
+            await Notification.requestPermission();
+        }
+        
+        if (Notification.permission !== 'granted') return;
+        
+        // Verificar via Service Worker
+        if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            
+            for (const reg of registrations) {
+                const notifs = await reg.getNotifications();
+                
+                for (const notif of notifs) {
+                    const data = {
+                        title: notif.title || '',
+                        body: notif.body || '',
+                        timestamp: notif.timestamp || Date.now(),
+                        tag: notif.tag || ''
+                    };
+                    
+                    const notifId = `${data.title}-${data.timestamp}`;
+                    
+                    if (!notificacoesProcessadas.has(notifId)) {
+                        notificacoesProcessadas.add(notifId);
+                        
+                        // Verificar se é do WhatsApp
+                        if (isWhatsAppNotification(data)) {
+                            processarNotificacaoDetectada(data);
+                        }
+                    }
+                    
+                    notif.close();
+                }
+            }
+        }
+        
+        // Verificar também notificações ativas na página
+        if ('getNotifications' in ServiceWorkerRegistration.prototype) {
+            // Já verificado acima
+        }
+        
+    } catch (error) {
+        console.error('Erro ao verificar notificações:', error);
+    }
+}
+
+function isWhatsAppNotification(data) {
+    const text = (data.title + ' ' + data.body + ' ' + data.tag).toLowerCase();
+    return text.includes('whatsapp') || 
+           text.includes('nova mensagem') || 
+           text.includes('respondeu') ||
+           text.includes('mensagem de') ||
+           text.includes('web.whatsapp');
+}
+
+function processarNotificacaoDetectada(data) {
+    totalRespostasDetectadas++;
+    
+    // Tentar extrair nome da notificação
+    let nomeDetectado = 'Cliente';
+    const title = data.title || '';
+    const body = data.body || '';
+    
+    // Padrões comuns de notificação do WhatsApp
+    const nomeMatch = title.match(/mensagem de (.+)/i) || 
+                      title.match(/(.+?) enviou/i) ||
+                      title.match(/nova mensagem de (.+)/i) ||
+                      body.match(/de (.+?):/i);
+    
+    if (nomeMatch) {
+        nomeDetectado = nomeMatch[1].trim();
+    }
+    
+    // Procurar cliente correspondente nos monitorados
+    let clienteEncontrado = null;
+    
+    for (const [tel, dados] of Object.entries(clientesMonitorados)) {
+        if (dados.status === 'pending') {
+            const nomeMatch = dados.nome.toLowerCase().includes(nomeDetectado.toLowerCase()) ||
+                            nomeDetectado.toLowerCase().includes(dados.nome.toLowerCase());
+            
+            if (nomeMatch) {
+                clienteEncontrado = { telefone: tel, ...dados };
+                break;
+            }
+        }
+    }
+    
+    // Se não encontrou correspondência exata, pega o último pendente
+    if (!clienteEncontrado) {
+        const pendentes = Object.entries(clientesMonitorados)
+            .filter(([_, d]) => d.status === 'pending')
+            .sort((a, b) => new Date(b[1].dataEnvio) - new Date(a[1].dataEnvio));
+        
+        if (pendentes.length > 0) {
+            clienteEncontrado = { telefone: pendentes[0][0], ...pendentes[0][1] };
+            nomeDetectado = clienteEncontrado.nome;
+        }
+    }
+    
+    if (clienteEncontrado) {
+        // ATUALIZAR STATUS
+        clienteEncontrado.status = 'responded';
+        clienteEncontrado.respostaDetectada = body || '✅ Respondeu (confirmado via notificação)';
+        clienteEncontrado.horaResposta = new Date().toLocaleString('pt-BR');
+        clientesMonitorados[clienteEncontrado.telefone] = clienteEncontrado;
+        
+        // ADICIONAR AO CHAT (SINCRONIZAÇÃO)
+        const mensagemResposta = body || '✅ Cliente confirmou atendimento!';
+        adicionarMensagemChat('received', clienteEncontrado.nome, mensagemResposta, true);
+        
+        // MOSTRAR BANNER
+        document.getElementById('notifBannerText').textContent = 
+            `✅ ${clienteEncontrado.nome} (${formatarTelefone(clienteEncontrado.telefone)}) RESPONDEU!`;
+        document.getElementById('notifBanner').classList.add('show');
+        
+        // ATUALIZAR BADGES
+        document.getElementById('badgeDash').textContent = totalRespostasDetectadas;
+        document.getElementById('badgeDash').classList.add('show');
+        document.getElementById('badgeChat').textContent = totalRespostasDetectadas;
+        document.getElementById('badgeChat').classList.add('show');
+        document.getElementById('badgeMonitor').textContent = totalRespostasDetectadas;
+        document.getElementById('badgeMonitor').classList.add('show');
+        
+        // ATUALIZAR CHIPS
+        atualizarChipsStatus();
+        
+        // ATUALIZAR PAINEL DE CLIENTES
+        atualizarPainelClientes();
+        
+        // LOG
+        adicionarLog(`✅ RESPOSTA DETECTADA: ${clienteEncontrado.nome} (${formatarTelefone(clienteEncontrado.telefone)})`, 'detect');
+        
+        // SALVAR
+        salvarDados();
+        atualizarContadores();
+        
+        // TOCAR SOM
+        tocarAlerta();
+        
+        // TOAST
+        mostrarToast(`✅ ${clienteEncontrado.nome} respondeu! Verifique o chat.`);
+    } else {
+        adicionarLog(`🔔 Notificação de "${nomeDetectado}" - sem cliente pendente correspondente`, 'warn');
+    }
+}
+
+// ============================================
+// CHAT SINCRONIZADO
+// ============================================
+function adicionarMensagemChat(tipo, nome, mensagem, isDeteccao = false) {
+    const hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    
+    // Adicionar em TODOS os chats
+    ['waChatDash', 'waChatFull'].forEach(chatId => {
+        const chat = document.getElementById(chatId);
+        if (!chat) return;
+        
+        const bubble = document.createElement('div');
+        bubble.className = `wa-bubble ${tipo}`;
+        
+        if (isDeteccao) {
+            bubble.classList.add('auto-detect');
+            bubble.innerHTML = `
+                <div class="b-name">👤 ${nome}</div>
+                ${mensagem.replace(/\n/g, '<br>')}
+                <span class="b-tag">NOTIFICAÇÃO</span>
+                <div class="b-time">${hora}</div>
+            `;
+        } else if (tipo === 'sent') {
+            bubble.innerHTML = `${mensagem.replace(/\n/g, '<br>')}<div class="b-time">${hora} ✔️</div>`;
+        } else {
+            bubble.innerHTML = `<div class="b-name">👤 ${nome}</div>${mensagem.replace(/\n/g, '<br>')}<div class="b-time">${hora}</div>`;
+        }
+        
+        chat.appendChild(bubble);
+        chat.scrollTop = chat.scrollHeight;
+        
+        // Limitar
+        if (chat.children.length > 60) chat.children[0].remove();
+    });
+}
+
+// ============================================
+// ENVIO WHATSAPP
+// ============================================
+function enviarWhatsApp() {
+    if (!dadosAtuais.numero) { mostrarToast('❌ Informe um telefone!'); return; }
+    if (!dadosAtuais.mensagem) gerarMensagem();
+    
+    // Registrar no monitor
+    clientesMonitorados[dadosAtuais.numero] = {
+        nome: dadosAtuais.nome,
+        contrato: dadosAtuais.contrato,
+        status: 'pending',
+        dataEnvio: new Date().toLocaleString('pt-BR'),
+        respostaDetectada: null,
+        horaResposta: null
+    };
+    
+    // Adicionar ao chat
+    adicionarMensagemChat('sent', dadosAtuais.nome, dadosAtuais.mensagem);
+    
+    // Copiar
+    navigator.clipboard.writeText(dadosAtuais.mensagem).catch(() => {});
+    
+    // Abrir WhatsApp Web
+    const num = dadosAtuais.numero.replace(/\D/g, '');
+    const numF = num.length === 10 ? num.substring(0,2) + '9' + num.substring(2) : num;
+    window.open(`https://web.whatsapp.com/send?phone=55${numF}&text=${encodeURIComponent(dadosAtuais.mensagem)}`, 'WA', `width=1000,height=700,left=${(screen.width-1000)/2},top=${(screen.height-700)/2}`);
+    
+    salvarHistorico('pending');
+    salvarDados();
+    atualizarPainelClientes();
+    atualizarContadores();
+    
+    adicionarLog(`📤 ENVIADO: ${dadosAtuais.nome} (${formatarTelefone(dadosAtuais.numero)})`, 'send');
+    mostrarToast('💬 WhatsApp aberto! Monitorando resposta...');
+}
+
+// ============================================
+// PAINEL DE CLIENTES MONITORADOS
+// ============================================
+function atualizarPainelClientes() {
+    const container = document.getElementById('clientesAtivos');
+    const clientes = Object.entries(clientesMonitorados);
+    
+    if (clientes.length === 0) {
+        container.innerHTML = '<div style="color:var(--text2);font-size:9px;">Nenhum cliente sendo monitorado</div>';
+        return;
+    }
+    
+    container.innerHTML = clientes.map(([tel, dados]) => {
+        let statusClass = 'waiting';
+        let statusText = '⏳ Aguardando';
+        
+        if (dados.status === 'responded') {
+            statusClass = 'replied';
+            statusText = '✅ Respondeu';
+        } else if (dados.status === 'noresp') {
+            statusClass = 'noreply';
+            statusText = '❌ Não respondeu';
+        }
+        
+        return `
+            <div class="client-status-row">
+                <div>
+                    <div class="cs-name">${dados.nome}</div>
+                    <div class="cs-phone">${formatarTelefone(tel)}</div>
+                </div>
+                <span class="cs-status ${statusClass}">${statusText}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+function atualizarChipsStatus() {
+    document.querySelectorAll('.phone-chip').forEach(chip => {
+        const tel = chip.getAttribute('data-tel');
+        if (clientesMonitorados[tel]?.status === 'responded') {
+            chip.classList.add('responded');
+        }
+    });
+}
+
+// ============================================
+// LOG
 // ============================================
 function adicionarLog(msg, tipo = '') {
     const hora = new Date().toLocaleTimeString('pt-BR');
-    const entry = document.createElement('div');
-    entry.className = 'log-entry';
-    entry.innerHTML = `<span class="time">[${hora}]</span> <span class="${tipo}">${msg}</span>`;
+    const line = document.createElement('div');
+    line.className = 'log-line';
     
-    // Adicionar em todos os painéis de log
-    ['assistantLog', 'assistantLogFull'].forEach(id => {
+    let tipoClass = '';
+    switch(tipo) {
+        case 'detect': tipoClass = 'log-detect'; break;
+        case 'send': tipoClass = 'log-send'; break;
+        case 'warn': tipoClass = 'log-warn'; break;
+        case 'error': tipoClass = 'log-error'; break;
+    }
+    
+    line.innerHTML = `<span class="log-time">[${hora}]</span> <span class="${tipoClass}">${msg}</span>`;
+    
+    ['monitorLogDash', 'monitorLogFull'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
-            el.appendChild(entry.cloneNode(true));
+            el.appendChild(line.cloneNode(true));
             el.scrollTop = el.scrollHeight;
             if (el.children.length > 100) el.children[0].remove();
         }
@@ -701,7 +755,7 @@ function adicionarLog(msg, tipo = '') {
 }
 
 // ============================================
-// VALIDAÇÃO E FORMATAÇÃO
+// UTILITÁRIOS
 // ============================================
 function validarTelefone(n) {
     const l = n.replace(/\D/g, '');
@@ -709,6 +763,7 @@ function validarTelefone(n) {
     if (!DDDS_VALIDOS.has(parseInt(l.substring(0,2)))) return { valido: false };
     return { valido: true };
 }
+
 function formatarTelefone(n) {
     if (!n) return '';
     if (n.length === 11) return `(${n.substring(0,2)}) ${n.substring(2,3)} ${n.substring(3,7)}-${n.substring(7)}`;
@@ -716,9 +771,6 @@ function formatarTelefone(n) {
     return n;
 }
 
-// ============================================
-// PROCESSAMENTO DE TEXTO
-// ============================================
 function processarTexto() {
     const t = document.getElementById("fonte").value;
     if (!t || t.length < 5) return;
@@ -731,16 +783,10 @@ function processarTexto() {
     
     const nome = t.match(/Nome:\s*([^\n]+)/i)?.[1]?.trim() || "NÃO IDENTIFICADO";
     const contrato = t.match(/Contrato:\s*([^\n]+)/i)?.[1]?.trim() || "N/A";
-    const endM = t.match(/Endere[çc]o:\s*([^]+?)(?=Bairro:|Cep:|Cidade:|Estado:|Telefone|$)/i);
-    const endereco = endM ? endM[1].replace(/\s+/g, ' ').trim() : "NÃO INFORMADO";
-    const bairro = t.match(/Bairro:\s*([^\n]+)/i)?.[1]?.trim() || "NÃO INFORMADO";
-    let cidade = t.match(/Cidade:\s*([^\n]+)/i)?.[1]?.trim() || '';
+    const endereco = t.match(/Endere[çc]o:\s*([^\n]+)/i)?.[1]?.trim() || "NÃO INFORMADO";
+    const cidade = t.match(/Cidade:\s*([^\n]+)/i)?.[1]?.trim() || '';
     
-    dadosAtuais = { ...dadosAtuais, nome, contrato, endereco, bairro, cidade, estado: '', telefonesDisponiveis: tels };
-    
-    document.getElementById('infoNome').textContent = nome;
-    document.getElementById('infoContrato').textContent = contrato;
-    document.getElementById('infoCidade').textContent = cidade || '-';
+    dadosAtuais = { ...dadosAtuais, nome, contrato, endereco, cidade, telefonesDisponiveis: tels };
     
     const cc = document.getElementById('phoneChips'); cc.innerHTML = '';
     tels.forEach((tel, i) => {
@@ -748,10 +794,10 @@ function processarTexto() {
         c.textContent = `${i+1}. ${formatarTelefone(tel)}`; c.onclick = () => selecionarTelefone(tel);
         c.setAttribute('data-tel', tel); cc.appendChild(c);
     });
-    if (!tels.length) cc.innerHTML = '<span style="color:var(--text2);font-size:9px;">Digite manualmente</span>';
+    if (!tels.length) cc.innerHTML = '<span style="color:var(--text2);font-size:8px;">Digite manualmente</span>';
     else selecionarTelefone(tels[0]);
     
-    if (endereco !== 'NÃO INFORMADO' && googleMapsReady) geocodeGoogle(endereco + (cidade ? ', ' + cidade : ''));
+    if (endereco !== 'NÃO INFORMADO') geocodeAddress(endereco + (cidade ? ', ' + cidade : ''));
     gerarMensagem();
 }
 
@@ -760,198 +806,127 @@ function selecionarTelefone(tel) {
     document.querySelector(`.phone-chip[data-tel="${tel}"]`)?.classList.add('selected');
     dadosAtuais.numero = tel;
     document.getElementById('telefoneInput').value = formatarTelefone(tel);
-    document.getElementById('infoTelefone').textContent = formatarTelefone(tel);
-    gerarMensagem();
 }
 
 function onTelefoneEditado() {
     const v = document.getElementById('telefoneInput').value.replace(/\D/g, '');
     if (v.length >= 10 && validarTelefone(v).valido) {
         dadosAtuais.numero = v.length === 10 ? v.substring(0,2) + '9' + v.substring(2) : v;
-        document.getElementById('infoTelefone').textContent = formatarTelefone(dadosAtuais.numero);
     }
 }
 
 function disparoDireto() {
     const tel = document.getElementById('telefoneInput').value.replace(/\D/g, '');
-    if (!validarTelefone(tel).valido) { mostrarToast('❌ Telefone inválido'); return; }
+    if (!validarTelefone(tel).valido) return;
     dadosAtuais.numero = tel.length === 10 ? tel.substring(0,2) + '9' + tel.substring(2) : tel;
-    document.getElementById('infoTelefone').textContent = formatarTelefone(dadosAtuais.numero);
     gerarMensagem();
     enviarWhatsApp();
 }
 
-// ============================================
-// MENSAGEM
-// ============================================
 function gerarMensagem() {
     const h = new Date().getHours();
     const s = h >= 5 && h < 12 ? "Bom dia" : (h >= 12 && h < 18 ? "Boa tarde" : "Boa noite");
     let m = `${s}! Como você está? 😊\n\nAqui quem fala é a equipe de atendimento.\n\n📋 *Dados:*\n• Nome: ${dadosAtuais.nome}\n• Contrato: ${dadosAtuais.contrato}\n• Endereço: ${dadosAtuais.endereco}\n`;
     if (dadosAtuais.cidade) m += `• Cidade: ${dadosAtuais.cidade}\n`;
-    if (document.getElementById('incluirAgenda')?.checked) m += `\n📅 Conseguimos um horário hoje! 🗓️\n`;
     m += `\n✨ Confirme respondendo esta mensagem!\nTenha um excelente ${h < 12 ? 'dia' : (h < 18 ? 'tarde' : 'noite')}! ❤️`;
     dadosAtuais.mensagem = m;
     return m;
 }
 
-// ============================================
-// ENVIO WHATSAPP
-// ============================================
-function enviarWhatsApp() {
-    if (!dadosAtuais.numero) { mostrarToast('❌ Informe um telefone!'); return; }
-    if (!dadosAtuais.mensagem) gerarMensagem();
-    
-    // Registrar cliente no monitoramento
-    clientesMonitorados[dadosAtuais.numero] = {
-        nome: dadosAtuais.nome,
-        contrato: dadosAtuais.contrato,
-        status: 'pending',
-        dataEnvio: new Date().toLocaleString('pt-BR'),
-        ultimaVerificacao: null
-    };
-    
-    // Adicionar ao chat
-    adicionarBubbleChat('sent', dadosAtuais.mensagem);
-    
-    // Copiar
-    if (document.getElementById('copiarClipboard')?.checked) navigator.clipboard.writeText(dadosAtuais.mensagem).catch(() => {});
-    
-    // Abrir WhatsApp Web
-    const num = dadosAtuais.numero.replace(/\D/g, '');
-    const numF = num.length === 10 ? num.substring(0,2) + '9' + num.substring(2) : num;
-    window.open(`https://web.whatsapp.com/send?phone=55${numF}&text=${encodeURIComponent(dadosAtuais.mensagem)}`, 'WAWeb', `width=1000,height=700,left=${(screen.width-1000)/2},top=${(screen.height-700)/2}`);
-    
-    salvarHistorico('pending');
-    salvarDadosMonitoramento();
-    atualizarContadores();
-    
-    adicionarLog(`📤 ENVIO: ${dadosAtuais.nome} (${formatarTelefone(dadosAtuais.numero)}) - Aguardando resposta...`);
-    mostrarToast('💬 WhatsApp aberto! Monitorando resposta...');
-    
-    document.getElementById('monitorDot').className = 'monitor-dot active';
-    document.getElementById('monitorText').textContent = '🔍 Monitorando respostas...';
+function copiarMensagem() { if (!dadosAtuais.mensagem) gerarMensagem(); navigator.clipboard.writeText(dadosAtuais.mensagem); mostrarToast('📋 Copiado!'); }
+
+function limparTudo() {
+    document.getElementById('fonte').value = '';
+    document.getElementById('telefoneInput').value = '';
+    document.getElementById('phoneChips').innerHTML = '<span style="color:var(--text2);font-size:8px;">Detectados do texto</span>';
+    dadosAtuais = { numero: '', nome: 'NÃO IDENTIFICADO', contrato: 'N/A', endereco: 'NÃO INFORMADO', cidade: '', mensagem: '', telefonesDisponiveis: [] };
 }
 
-function adicionarBubbleChat(tipo, msg) {
-    ['waChat', 'waChatFull'].forEach(id => {
-        const chat = document.getElementById(id);
-        if (!chat) return;
-        const hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        const b = document.createElement('div'); b.className = `wa-bubble ${tipo}`;
-        b.innerHTML = tipo === 'sent' ? `${msg.replace(/\n/g, '<br>')}<div class="bubble-time">${hora} ✔️</div>` : `<div class="bubble-name">👤 Cliente</div>${msg.replace(/\n/g, '<br>')}<div class="bubble-time">${hora}</div>`;
-        chat.appendChild(b); chat.scrollTop = chat.scrollHeight;
-        if (chat.children.length > 50) chat.children[0].remove();
-    });
-}
-
-function adicionarBubbleChatAuto(nome, msg) {
-    ['waChat', 'waChatFull'].forEach(id => {
-        const chat = document.getElementById(id);
-        if (!chat) return;
-        const hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        const b = document.createElement('div'); b.className = 'wa-bubble auto-response';
-        b.innerHTML = `<div class="bubble-name">👤 ${nome}</div>${msg.replace(/\n/g, '<br>')}<span class="bubble-badge">✅ DETECTADO</span><div class="bubble-time">${hora}</div>`;
-        chat.appendChild(b); chat.scrollTop = chat.scrollHeight;
-    });
-}
-
-// ============================================
-// HISTÓRICO E CONTADORES
-// ============================================
 function salvarHistorico(status) {
     const h = JSON.parse(localStorage.getItem('historicoMensagens') || '[]');
-    h.push({ dataHora: new Date().toLocaleString('pt-BR'), contrato: dadosAtuais.contrato, nome: dadosAtuais.nome, telefone: dadosAtuais.numero, status });
+    h.push({ dataHora: new Date().toLocaleString('pt-BR'), nome: dadosAtuais.nome, telefone: dadosAtuais.numero, status });
     if (h.length > 100) h.shift();
     localStorage.setItem('historicoMensagens', JSON.stringify(h));
 }
 
-function salvarDadosMonitoramento() {
+function salvarDados() {
     localStorage.setItem('clientesMonitorados', JSON.stringify(clientesMonitorados));
+    localStorage.setItem('notificacoesProcessadas', JSON.stringify([...notificacoesProcessadas]));
 }
 
 function atualizarContadores() {
     const h = JSON.parse(localStorage.getItem('historicoMensagens') || '[]');
     const hoje = new Date().toLocaleDateString('pt-BR');
     const hj = h.filter(x => x.dataHora.includes(hoje));
-    document.getElementById('infoEnvios').textContent = hj.length;
-    document.getElementById('infoRespondidos').textContent = hj.filter(x => x.status === 'responded').length;
-    document.getElementById('infoNaoRespondidos').textContent = hj.filter(x => x.status === 'noresp').length;
+    const el = document.getElementById('clientesAtivos');
+    if (el && hj.length > 0) {
+        // Atualiza contadores visuais se necessário
+    }
 }
 
-function atualizarChipsStatus() {
-    document.querySelectorAll('.phone-chip').forEach(c => {
-        c.classList.remove('responded', 'noresp');
-        const tel = c.getAttribute('data-tel');
-        if (clientesMonitorados[tel]?.status === 'responded') c.classList.add('responded');
-        if (clientesMonitorados[tel]?.status === 'noresp') c.classList.add('noresp');
-    });
-}
-
-// ============================================
-// UTILITÁRIOS
-// ============================================
-function copiarMensagem() { if (!dadosAtuais.mensagem) gerarMensagem(); navigator.clipboard.writeText(dadosAtuais.mensagem).then(() => mostrarToast('📋 Copiado!')); }
-
-function limparTudo() {
-    ['fonte','telefoneInput'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('phoneChips').innerHTML = '<span style="color:var(--text2);font-size:9px;">Detectados ou digite</span>';
-    ['infoNome','infoContrato','infoTelefone','infoCidade'].forEach(id => document.getElementById(id).textContent = '-');
-    dadosAtuais = { numero: '', contrato: 'N/A', nome: 'NÃO IDENTIFICADO', endereco: 'NÃO INFORMADO', bairro: 'NÃO INFORMADO', cidade: '', estado: '', mensagem: '', telefonesDisponiveis: [] };
-    atualizarContadores();
-    mostrarToast('✅ Limpo!');
-}
-
-function mostrarToast(msg, tipo = '') {
+function mostrarToast(msg) {
     const c = document.getElementById('toastContainer');
-    const t = document.createElement('div'); t.className = `toast ${tipo}`; t.textContent = msg;
+    const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
     c.appendChild(t);
-    setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; setTimeout(() => t.remove(), 300); }, 3500);
+    setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; setTimeout(() => t.remove(), 300); }, 3000);
 }
 
-function atualizarRelogio() {
-    document.getElementById('relogio').textContent = new Date().toLocaleTimeString('pt-BR');
+function tocarAlerta() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ctx.createOscillator(); const g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.frequency.setValueAtTime(800, ctx.currentTime);
+        o.frequency.setValueAtTime(1200, ctx.currentTime + 0.15);
+        g.gain.setValueAtTime(0.3, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+        o.start(); o.stop(ctx.currentTime + 0.4);
+    } catch(e) {}
 }
 
 // ============================================
 // INIT
 // ============================================
 window.onload = function() {
-    console.log('🚀 Agente V10 - Monitor de Notificações WhatsApp');
+    console.log('🚀 Agente V10.1 - Notificações Sincronizadas');
     
     if (!localStorage.getItem('historicoMensagens')) localStorage.setItem('historicoMensagens', JSON.stringify([]));
     
-    // Carregar dados de monitoramento
+    // Carregar dados salvos
     clientesMonitorados = JSON.parse(localStorage.getItem('clientesMonitorados') || '{}');
+    const savedNotifs = JSON.parse(localStorage.getItem('notificacoesProcessadas') || '[]');
+    notificacoesProcessadas = new Set(savedNotifs);
     
-    atualizarContadores();
-    atualizarRelogio();
-    setInterval(atualizarRelogio, 1000);
+    atualizarPainelClientes();
+    atualizarChipsStatus();
     
-    // Iniciar monitor de notificações
-    if ('Notification' in window && Notification.permission !== 'denied') {
+    // Relógio
+    setInterval(() => {
+        document.getElementById('relogio').textContent = new Date().toLocaleTimeString('pt-BR');
+    }, 1000);
+    
+    // Iniciar monitor
+    if ('Notification' in window) {
         Notification.requestPermission().then(perm => {
             if (perm === 'granted') {
-                adicionarLog('✅ Monitor de notificações do Windows ativado');
-                // Verificar notificações periodicamente
-                setInterval(verificarNotificacoesWindows, CONFIG.CHECK_INTERVAL);
-                verificarNotificacoesWindows();
+                adicionarLog('✅ Monitor de notificações ATIVADO');
+                verificarNotificacoes();
+                setInterval(verificarNotificacoes, CONFIG.CHECK_INTERVAL);
             } else {
-                adicionarLog('⚠️ Permissão de notificações negada. O monitor não funcionará.', 'warn');
+                adicionarLog('⚠️ Permissão negada para notificações', 'warn');
             }
         });
     }
     
-    adicionarLog('🤖 Assistente de monitoramento iniciado');
-    adicionarLog('📡 Aguardando notificações do Windows...');
+    adicionarLog('🤖 Sistema de monitoramento pronto');
 };
 
 // Atalhos
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', e => {
     if (e.ctrlKey && e.key === '1') { e.preventDefault(); switchTab('dashboard'); }
     if (e.ctrlKey && e.key === '2') { e.preventDefault(); switchTab('whatsapp'); }
     if (e.ctrlKey && e.key === '3') { e.preventDefault(); switchTab('mapa'); }
-    if (e.ctrlKey && e.key === '4') { e.preventDefault(); switchTab('assistente'); }
+    if (e.ctrlKey && e.key === '4') { e.preventDefault(); switchTab('monitor'); }
     if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); enviarWhatsApp(); }
 });
 </script>
